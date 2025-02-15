@@ -4,12 +4,26 @@ import bcrypt from "bcrypt";
 import multer from "multer";
 import path from "path";
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
 
+//?-----------------------------------------------------
+dotenv.config();
 //TEMP CONST:
-const JWT_SECRET = "SECRET1234";
+const JWT_SECRET = process.env.JWT_SECRET;
+console.log(JWT_SECRET);
+//?-------------------------------------------------------
+/*
+!@desc: interface defining useremail
+
+*/
+interface CustomRequest extends Request {
+  UserEmail?: string;
+}
+
+//?--------------------------------------------------------
 /* 
-@name: Storage 
-@desc: function to store image
+!@name: Storage 
+!@desc: function to store image
 */
 
 const storage = multer.diskStorage({
@@ -80,9 +94,7 @@ export const login = async (req: Request, res: Response) => {
   const { Email, Password } = req.body;
 
   if (!Email || !Password) {
-    return res
-      .status(400)
-      .json({ message: "Please fill all the required fields" });
+    res.status(400).json({ message: "Please fill all the required fields" });
   } else {
     try {
       const user = await User.findOne({ Email });
@@ -95,21 +107,25 @@ export const login = async (req: Request, res: Response) => {
         if (!isMatched) {
           res.status(400).json({ message: "Invalid Credentials" });
         } else {
-          const token = jwt.sign(
-            { id: user._id, email: user.Email, role: user.Role },
-            JWT_SECRET,
-            { expiresIn: "1d" }
-          );
-          res.status(200).json({
-            message: "Log In Successful",
-            token,
-            user: {
-              id: user._id,
-              Name: user.Name,
-              Email: user.Email,
-              Profile: user.ProfileUrl,
-            },
-          });
+          if (JWT_SECRET) {
+            const token = jwt.sign(
+              { id: user._id, email: user.Email, role: user.Role },
+              JWT_SECRET,
+              { expiresIn: "1d" }
+            );
+            res.status(200).json({
+              message: "Log In Successful",
+              token,
+              user: {
+                id: user._id,
+                Name: user.Name,
+                Email: user.Email,
+                Profile: user.ProfileUrl,
+              },
+            });
+          } else {
+            res.status(400).json({ message: "Cannot find the secret key" });
+          }
         }
       }
     } catch (err: any) {
@@ -118,5 +134,66 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-export const getCurrentUser = () => {};
-export const UpdateProfile = () => {};
+//?------------------------------------------------------------------------------------------------------------
+/*
+!@name: getCurrentUser
+!@desc: to get profile
+!@access: private
+*/
+
+export const getCurrentUser = async (req: CustomRequest, res: Response) => {
+  const UserEmail = req.UserEmail;
+
+  if (!UserEmail) {
+    res.status(404).json({ message: "Token Not decoded" });
+  } else {
+    try {
+      const user = await User.findOne({ Email: UserEmail });
+      if (!user) {
+        res.status(400).json({ message: "User Not found" });
+      } else {
+        res.status(200).json(user);
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Internal error" });
+    }
+  }
+};
+//?------------------------------------------------------------------------------------------
+
+/*
+!@name: Update profile
+!@desc: this function update profile
+!@access: private
+*/
+
+export const UpdateProfile = async (req: CustomRequest, res: Response) => {
+  try {
+    const user = await User.findOne({ Email: req.UserEmail });
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+    } else {
+      if (req.body.UpUserName) {
+        user.Name = req.body.UpUserName;
+      }
+      if (req.body.UpUserPassword) {
+        const salt = await bcrypt.genSalt(10);
+        user.Password = await bcrypt.hash(req.body.UpUserPassword, salt);
+      }
+      if (req.file) {
+        const ProfileURL = req.file ? `/uploads/${req.file.filename}` : null;
+        if (ProfileURL) {
+          user.ProfileUrl = ProfileURL;
+        }
+      }
+    }
+
+    await user?.save();
+    res
+      .status(201)
+      .json({ success: true, message: "Profile updated successfully" });
+  } catch (err: any) {
+    console.error("Update error: ", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
