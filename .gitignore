@@ -19,3 +19,8 @@ logs/
 
 # Misc
 .DS_Store
+
+
+# .gitignore
+node_modules
+.env
