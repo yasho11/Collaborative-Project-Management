@@ -5,7 +5,7 @@ export interface IUsers extends Document {
   Email: string;
   Password: string;
   Role: string;
-  workspaceList: [];
+  workspaceList: mongoose.Types.ObjectId[]; // Change to ObjectId array
   ProfileUrl: string;
 }
 
@@ -28,11 +28,14 @@ const UserSchema: Schema = new Schema(
       type: String,
       required: true,
     },
-    workspaceList: {
-      type: [String],
-      required: false,
-      defualt: [],
-    },
+    workspaceList: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Workspace", // Reference to Workspace model
+        required: false,
+        default: [],
+      },
+    ],
     ProfileUrl: {
       type: String,
       required: false,
