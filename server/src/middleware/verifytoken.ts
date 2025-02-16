@@ -1,17 +1,20 @@
 import { NextFunction, Response, Request } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { ObjectId } from "mongodb";
 
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
 interface CustomRequest extends Request {
   UserEmail?: string;
+  role?: string;
+  id?: ObjectId;
 }
 
 interface JWTPayload {
   email: string;
-  id?: string;
+  id?: ObjectId;
   role: string;
 }
 
@@ -32,6 +35,8 @@ export const verifyToken = async (
         const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
         console.log("Decoded Payload: ", decoded);
         req.UserEmail = decoded.email;
+        req.role = decoded.role;
+        req.id = decoded.id;
         next();
       } else {
         res.status(400).json("Secret not found");

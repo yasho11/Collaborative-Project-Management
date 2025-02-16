@@ -176,6 +176,9 @@ export const UpdateProfile = async (req: CustomRequest, res: Response) => {
       if (req.body.UpUserName) {
         user.Name = req.body.UpUserName;
       }
+      if (req.body.role) {
+        user.Role = req.body.role;
+      }
       if (req.body.UpUserPassword) {
         const salt = await bcrypt.genSalt(10);
         user.Password = await bcrypt.hash(req.body.UpUserPassword, salt);
