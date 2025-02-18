@@ -3,9 +3,10 @@ import mongoose, { Document, Schema } from "mongoose";
 export interface IWorkspace extends Document {
   name: string;
   description?: string;
-  createdBy: mongoose.Schema.Types.ObjectId; // Reference to User
+  createdBy: mongoose.Schema.Types.ObjectId;
   members: { userId: mongoose.Schema.Types.ObjectId; role: string }[];
-  projects: mongoose.Schema.Types.ObjectId[]; // Reference to Projects
+  projects: mongoose.Schema.Types.ObjectId[];
+  invites: { email: string; token: string; expiresAt: Date }[]; // Invite System
 }
 
 const workspaceSchema: Schema = new Schema(
@@ -41,6 +42,13 @@ const workspaceSchema: Schema = new Schema(
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Project",
+      },
+    ],
+    invites: [
+      {
+        email: { type: String, required: true },
+        token: { type: String, required: true },
+        expiresAt: { type: Date, required: true },
       },
     ],
   },
