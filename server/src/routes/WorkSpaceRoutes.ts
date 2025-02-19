@@ -21,6 +21,6 @@ router.put("/:_id", verifyToken, updateWorkspace);
 router.delete("/:_id", verifyToken, deleteWorkspace);
 router.post("/join", verifyToken, addMember);
 router.delete("/:_id/members/:DeleteId", verifyToken, removeMember);
-router.post("/:workspaceId/invite", verifyToken, inviteMember);
+router.post("/invite", verifyToken, inviteMember);
 router.post("/:_id/addAdmin", verifyToken, makeAdmin);
 export default router;

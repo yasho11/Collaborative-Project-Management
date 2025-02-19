@@ -455,6 +455,7 @@ export const makeAdmin = async (
   }
 
   try {
+    console.log(`Workspace Id: ${_id}`);
     const workspace = await Workspace.findById(_id);
 
     if (!workspace) {

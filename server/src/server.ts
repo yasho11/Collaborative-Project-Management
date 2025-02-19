@@ -4,6 +4,7 @@ import AuthRoutes from "./routes/AuthRoutes";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import WorkspaceRoutes from "./routes/WorkSpaceRoutes";
+import ProjectRoutes from "./routes/ProjectRoutes";
 
 dotenv.config();
 const app = express();
@@ -16,6 +17,7 @@ app.use(express.static("public"));
 app.use("/auth", AuthRoutes);
 app.use("/users", UserRoutes);
 app.use("/workspaces", WorkspaceRoutes);
+app.use("/projects", ProjectRoutes);
 //Mongo Connections:
 const MongoURI = process.env.MONGO_URI;
 if (MongoURI) {
