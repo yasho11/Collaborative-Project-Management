@@ -16,10 +16,10 @@ import {
 const router = Router();
 
 router.post("/", verifyToken, createProject);
-router.get("/:workspaceid", verifyToken, getProjectByPeople);
+router.get("/ws/:workspaceid", verifyToken, getProjectByPeople);
 router.get("/:projectId", verifyToken, getProjectById);
-router.put("/:porjectId", verifyToken, updateProject);
-router.delete(":/id", verifyToken, deleteProject);
+router.put("/:projectId", verifyToken, updateProject);
+router.delete("/:id", verifyToken, deleteProject);
 router.post("/join", verifyToken, addMemberToProject);
 router.post("/invite", verifyToken, inviteMember);
 router.post("/:_id/addAdmin", verifyToken, makeAdmin);

@@ -76,14 +76,14 @@ const ProjectSchema: Schema = new Schema({
       type: Number,
       required: true,
     },
-    invites: [
-      {
-        email: { type: String, required: true },
-        token: { type: String, required: true },
-        expiresAt: { type: Date, required: true },
-      },
-    ],
   },
+  invites: [
+    {
+      email: { type: String, required: true },
+      token: { type: String, required: true },
+      expiresAt: { type: Date, required: true },
+    },
+  ],
 });
 
 export default mongoose.model<IProject>("Project", ProjectSchema);

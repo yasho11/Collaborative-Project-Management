@@ -1,9 +1,9 @@
 import express, { Request, Response } from "express";
-import Project from "../models/project";
+import Project from "../models/Project";
 import Workspace from "../models/Workspace"; // Assuming you have a Workspace model
 import { ObjectId } from "mongoose";
 import crypto from "crypto";
-
+import mongoose from "mongoose";
 //?-------------------------------------------------------------------
 /*
 !@desc: Interface defining useremail, role, and ID in the request
@@ -24,6 +24,7 @@ export const createProject = async (
   req: CustomRequest,
   res: Response
 ): Promise<any> => {
+  console.log("/POST project/hit");
   try {
     const { Name, Description, workspaceId, tasks, dueDate } = req.body;
     const createdBy = req.id;
@@ -143,7 +144,7 @@ export const getProjectById = async (
 ): Promise<any> => {
   const id = req.id;
 
-  const projectId = req.params;
+  const projectId = req.params.projectId;
 
   if (!id) {
     return res.status(404).json({ error: "UnAuthorized: Access Denied" });
@@ -154,7 +155,12 @@ export const getProjectById = async (
   }
 
   try {
-    const project = await Project.findById(projectId);
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
+      return res.status(400).json({ error: "Invalid project ID format" });
+    }
+    const project = await Project.findById(
+      new mongoose.Types.ObjectId(projectId)
+    );
 
     if (!project) {
       return res.status(404).json({ error: "Project Not Found!!" });
@@ -196,14 +202,16 @@ export const updateProject = async (
 ): Promise<any> => {
   const id = req.id;
 
-  const projectId = req.params;
+  const projectId = req.params.projectId;
 
   if (!id) {
     return res.status(401).json({ error: "UnAuthorized access" });
   }
-
+  console.log(`Project Id: ${projectId}`);
   try {
-    const project = await Project.findById(projectId);
+    const project = await Project.findById(
+      new mongoose.Types.ObjectId(projectId)
+    );
 
     if (!project) {
       return res.status(404).json({ error: "Project not found" });
@@ -216,11 +224,11 @@ export const updateProject = async (
       (member) => member.role.toString().toLowerCase() === "admin"
     );
     if (isMember && isAdmin) {
-      if (req.body.projectname) {
-        project.Name = req.body.projectname;
+      if (req.body.Name) {
+        project.Name = req.body.Name;
       }
-      if (req.body.projectdesc) {
-        project.Description = req.body.projectdesc;
+      if (req.body.Description) {
+        project.Description = req.body.Description;
       }
       if (req.body.dueDate) {
         project.Name = req.body.dueDate;
@@ -236,8 +244,10 @@ export const updateProject = async (
     } else {
       return res.status(401).json({ error: "UnAuthorized access" });
     }
-  } catch (error) {
-    return res.status(500).json({ message: "Server Error" });
+  } catch (error: any) {
+    return res
+      .status(500)
+      .json({ message: "Server Error", error: error.message });
   }
 };
 
@@ -253,26 +263,35 @@ export const deleteProject = async (
   res: Response
 ): Promise<any> => {
   const userId = req.id;
-  const id = req.params;
+  const id = req.params.id;
 
   if (!userId) {
     return res.status(401).json({ error: "UnAuthorized access" });
   }
-
+  console.log(`userId: ${userId}`);
   try {
-    const project = await Project.findById(id);
+    const project = await Project.findById(new mongoose.Types.ObjectId(id));
 
     if (!project) {
       return res.status(404).json({ error: "Project not found" });
     }
 
     const isMember = project.members.some(
-      (member) => member.userId.toString() === id.toString()
+      (member) => member.userId.toString() === userId.toString()
     );
     const isAdmin = project.members.some(
       (member) => member.role.toString().toLowerCase() === "admin"
     );
-
+    if (!isAdmin) {
+      return res
+        .status(401)
+        .json({ message: "UnAuthorizeed access: NOt a admin" });
+    }
+    if (!isMember) {
+      return res
+        .status(401)
+        .json({ message: "UnAuthorizeed access: NOt a member" });
+    }
     if (isAdmin && isMember) {
       const deleleProject = await Project.findByIdAndDelete(id);
 
@@ -282,7 +301,9 @@ export const deleteProject = async (
         workspace: deleleProject,
       });
     } else {
-      return res.status(401).json({ message: "UnAuthorizeed access" });
+      return res
+        .status(401)
+        .json({ message: "UnAuthorizeed access: NOt a member or a admin" });
     }
   } catch (error) {
     return res.status(500).json({ error: "Internal server error" });
@@ -303,13 +324,13 @@ export const addMemberToProject = async (
   try {
     const { token } = req.body;
     const userId = req.id;
-    const project = await Project.findOne({ "invited.token": token });
-
+    const project = await Project.findOne({ "invites.token": token });
+    console.log(`Invitation token: ${token}`);
     if (!project) {
       return res.status(400).json({ message: "Invalid invite token" });
     }
 
-    const invite = project.invites.find((inv) => inv.token === token);
+    const invite = await project.invites.find((inv) => inv.token === token);
 
     if (!invite || new Date(invite.expiresAt) < new Date()) {
       return res.status(400).json({ message: "Invite expired or invalid" });
@@ -381,28 +402,27 @@ export const inviteMember = async (
 !@desc: Removing members from the project
 !@access: private(admin member of the project)
 */
+
 export const removeMember = async (
   req: CustomRequest,
   res: Response
 ): Promise<any> => {
-  const { _id } = req.params; // project ID
-  const userEmail = req.UserEmail;
-  const userId = req.id; // Current User ID
-  const { DeleteId } = req.params; // User ID to be removed
-  console.log(userId);
-  if (!userEmail || !userId) {
-    return res.status(401).json({ error: "Unauthorized Access" });
-  }
-
   try {
-    // Fetch the project
-    const project = await Project.findById(_id);
-    console.log(project);
-    if (!project) {
-      return res.status(404).json({ error: "project not found" });
+    const { _id } = req.params; // Project ID
+    const userId = req.id; // Current User ID
+    const { DeleteId } = req.body; // User ID to be removed
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized Access" });
     }
 
-    // Check if the requester is an admin
+    // Fetch the project
+    const project = await Project.findById(_id);
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    // Ensure the requester is an admin
     const isAdmin = project.members.some(
       (member) =>
         member.userId.toString() === userId.toString() &&
@@ -413,7 +433,7 @@ export const removeMember = async (
       return res.status(403).json({ error: "Only admins can remove members" });
     }
 
-    // Check if the member exists
+    // Ensure the member exists
     const memberToRemove = project.members.find(
       (member) => member.userId.toString() === DeleteId.toString()
     );
@@ -422,7 +442,7 @@ export const removeMember = async (
       return res.status(404).json({ error: "Member not found in project" });
     }
 
-    // Prevent the last admin from removing themselves
+    // Prevent removing the last admin
     const totalAdmins = project.members.filter(
       (member) => member.role === "Admin"
     ).length;
@@ -436,15 +456,19 @@ export const removeMember = async (
         .json({ error: "Cannot remove yourself as the last admin" });
     }
 
-    // Remove the member
-    await project.updateOne(
-      { _id },
-      { $pull: { members: { userId: DeleteId } } }
+    // Convert DeleteId to ObjectId and remove the member properly
+    project.members = project.members.filter(
+      (member) => member.userId.toString() !== DeleteId.toString()
     );
 
-    res.status(200).json({ message: "Member removed successfully" });
-  } catch (error) {
-    res.status(500).json({ error: "Error removing member", details: error });
+    await project.save();
+
+    return res.status(200).json({ message: "Member removed successfully" });
+  } catch (error: any) {
+    console.error("Error removing member:", error);
+    return res
+      .status(500)
+      .json({ error: "Error removing member", details: error.message });
   }
 };
 
