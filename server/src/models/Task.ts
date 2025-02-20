@@ -9,12 +9,14 @@ export interface ITask extends Document {
   priority: string;
   createdAt: Date;
   dueDate: Date;
+  createdBy: mongoose.Types.ObjectId;
   activityLog: {
     userId: mongoose.Schema.Types.ObjectId;
     action: string;
     timestamp: Date;
-  };
+  }[];
   comments: {
+    _id: mongoose.Types.ObjectId;
     userId: mongoose.Schema.Types.ObjectId;
     message: string;
     status: string;
@@ -57,6 +59,10 @@ const TaskSchema: Schema = new Schema(
     dueDate: {
       type: Date,
     },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
     activityLog: [
       {
         userId: {
@@ -75,9 +81,13 @@ const TaskSchema: Schema = new Schema(
     ],
     comments: [
       {
+        _id: {
+          type: mongoose.Schema.Types.ObjectId,
+          auto: true,
+        },
         userId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "User", // Reference to the User model
+          ref: "User",
         },
         message: {
           type: String,
