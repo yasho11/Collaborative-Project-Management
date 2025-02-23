@@ -24,7 +24,7 @@ interface CustomRequest extends Request {
 export const createTask = async (
   req: CustomRequest,
   res: Response
-): Promise<Response> => {
+): Promise<any> => {
   try {
     const email = req.UserEmail;
     const userId = req.id; // The ID of the user making the request
@@ -45,9 +45,7 @@ export const createTask = async (
 
     // Validate required fields
     if (!title || !projectId || !assignedTo) {
-      return res
-        .status(400)
-        .json({ error: "Title, projectId, and assignedTo are required" });
+      return res.status(400).json({ error: "Title, projectId are required" });
     }
 
     // Check if assigned user exists
@@ -96,13 +94,13 @@ export const createTask = async (
 !@access: Private(all users included in the task)
 */
 export const getAllTasks = async (
-  req: Request,
+  req: CustomRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const userId = req.params.userId; // Assuming userId is passed as a parameter in the route
+    const userId = req.id; // Assuming userId is passed as a parameter in the route
 
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
+    if (!userId) {
       res.status(400).json({ message: "Invalid user ID" });
       return;
     }
@@ -138,9 +136,8 @@ export const getTaskById = async (
   res: Response
 ): Promise<void> => {
   try {
-    const taskId = req.params.taskId; // Assuming taskId is passed as a parameter in the route
-
-    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+    const { taskId } = req.params; // Assuming taskId is passed as a parameter in the route
+    if (!taskId) {
       res.status(400).json({ message: "Invalid task ID" });
       return;
     }
@@ -176,10 +173,10 @@ export const updateTask = async (
   res: Response
 ): Promise<void> => {
   try {
-    const taskId = req.params.taskId; // Assuming taskId is passed as a parameter in the route
+    const { taskId } = req.params; // Assuming taskId is passed as a parameter in the route
     const { status, dueDate, priority, description } = req.body; // Extract fields to update
 
-    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+    if (!taskId) {
       res.status(400).json({ message: "Invalid task ID" });
       return;
     }
@@ -207,9 +204,12 @@ export const updateTask = async (
     }
 
     res.status(200).json(updatedTask);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error, unable to update task" });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({
+      message: "Server error, unable to update task",
+      error: err.message,
+    });
   }
 };
 
@@ -220,14 +220,11 @@ export const updateTask = async (
 !@desc: Delete Task details
 !@access: Private(all users included in the task)
 */
-export const deleteTask = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const deleteTask = async (req: Request, res: Response): Promise<any> => {
   try {
-    const taskId = req.params.taskId; // Assuming taskId is passed as a parameter in the route
+    const { taskId } = req.params; // Assuming taskId is passed as a parameter in the route
 
-    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+    if (!taskId) {
       res.status(400).json({ message: "Invalid task ID" });
       return;
     }
@@ -262,7 +259,7 @@ export const assignTask = async (
   res: Response
 ): Promise<void> => {
   try {
-    const taskId = req.params.taskId; // Assuming taskId is passed as a parameter in the route
+    const { taskId } = req.params; // Assuming taskId is passed as a parameter in the route
     const { userId, projectId } = req.body; // Extract the userId and projectId from the request body
 
     if (
@@ -327,10 +324,10 @@ export const addComment = async (
   res: Response
 ): Promise<void> => {
   try {
-    const taskId = req.params.taskId; // Assuming taskId is passed as a parameter in the route
+    const { taskId } = req.params; // Assuming taskId is passed as a parameter in the route
     const { userId, message, status = "Pending" } = req.body; // Extract userId, message, and status from request body
 
-    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+    if (!taskId) {
       res.status(400).json({ message: "Invalid task ID" });
       return;
     }
@@ -384,12 +381,12 @@ export const updateComment = async (
   res: Response
 ): Promise<void> => {
   try {
-    const taskId = req.params.taskId;
-    const commentId = req.params.commentId; // Get commentId from the URL
+    const { taskId } = req.params;
+    const { commentId } = req.params; // Get commentId from the URL
     const { message, status } = req.body; // Get updated message and status
 
     // Check if taskId is valid
-    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+    if (!taskId) {
       res.status(400).json({ message: "Invalid task ID" });
       return;
     }
@@ -438,8 +435,8 @@ export const deleteComment = async (
   res: Response
 ): Promise<void> => {
   try {
-    const taskId = req.params.taskId;
-    const commentId = req.params.commentId; // Get commentId from the URL
+    const { taskId } = req.params;
+    const { commentId } = req.params; // Get commentId from the URL
 
     const task = await Task.findById(taskId);
     if (!task) {

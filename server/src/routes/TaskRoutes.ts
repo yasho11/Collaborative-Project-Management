@@ -1,16 +1,27 @@
 import Router from "express";
 import { verifyToken } from "../middleware/verifytoken";
+import {
+  assignTask,
+  createTask,
+  getAllTasks,
+  getTaskById,
+  updateTask,
+  deleteTask,
+  addComment,
+  updateComment,
+  deleteComment,
+} from "../controllers/TaskController";
 
 const router = Router();
 
-router.post("/", verifyToken); // Create a new task
-router.get("/", verifyToken); //Get all task assigned   to thae  logged in  user
-router.get("/:id", verifyToken);//get details of specific task
-router.put("/:id", verifyToken);//update task detail
-router.delete("/:id", verifyToken);//delete task 
-router.post("/:id/assign", verifyToken);//assisgn task
-router.post("/id/comments/:commentId", verifyToken);//Add a comment status
-router.put("/:id/comments/commentId", verifyToken);//update comment status
-router.delete("/:id/comments/:commentId", verifyToken);//Delete comment
+router.post("/", verifyToken, createTask); // Create a new task
+router.get("/", verifyToken, getAllTasks); //Get all task assigned   to thae  logged in  user
+router.get("/:taskId", verifyToken, getTaskById); //get details of specific task
+router.put("/:taskId", verifyToken, updateTask); //update task detail
+router.delete("/:taskId", verifyToken, deleteTask); //delete task
+router.post("/:taskId/assign", verifyToken, assignTask); //assisgn task
+router.post("/:taskId/comments", verifyToken, addComment); //Add a comment status
+router.put("/:taskId/comments/:commentId", verifyToken, updateComment); //update comment status
+router.delete("/:taskId/comments/:commentId", verifyToken, deleteComment); //Delete comment
 
 export default router;
