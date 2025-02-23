@@ -324,6 +324,7 @@ export const addMemberToProject = async (
   try {
     const { token } = req.body;
     const userId = req.id;
+    const { addId } = req.body;
     const project = await Project.findOne({ "invites.token": token });
     console.log(`Invitation token: ${token}`);
     if (!project) {
@@ -338,9 +339,9 @@ export const addMemberToProject = async (
 
     project.invites = project.invites.filter((inv) => inv.token !== token);
 
-    if (userId) {
+    if (addId) {
       const newMember = {
-        userId: userId,
+        userId: addId,
         role: "Member",
       };
       project.members.push(newMember);
@@ -350,8 +351,10 @@ export const addMemberToProject = async (
     await project.save();
 
     return res.status(200).json({ message: "Successfully joined the project" });
-  } catch (error) {
-    return res.status(500).json({ error: "Internal server error" });
+  } catch (error: any) {
+    return res
+      .status(500)
+      .json({ error: "Internal server error", err: error.message });
   }
 };
 
