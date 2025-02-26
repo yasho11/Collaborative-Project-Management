@@ -1,0 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+:root {
+  /* Colors */
+  --primary-color: #304258;
+  --secondary-color: #f8f9fa;
+  --text-color: #333;
+  --button-hover: #16263d;
+
+  /* Fonts */
+  --P-fam: 'Poppins', sans-serif;
+}
+body {
+  font-family: var(--P-fam);
+  margin: 0;
+  padding: 0;
+  background-color: #f5f5f5;
+}
+
+.Container{
+  display: flex;
+  flex-direction: row;
+  height: 750px;
+  overflow: hidden;
+}
+
+.col{
+  flex: 1;
+  padding: 0;
+  margin: 0;
+  width: 60%;
+  height: 100%;
+  background-color: #F4EFEB
+}
+
+.formContainer{
+  display: flex;
+  flex-direction: column;
+  justify-items: center;
+  align-items: center;
+  margin-top: 200px;
+}
+.formCol1{
+  align-items: left;
+  justify-items: top;
+}
+
+.text1{
+  font-size: 42px;
+  font-family:  var(--P-fam);
+  font-weight: 500;
+  margin-bottom: 64px;
+  color: var(--primary-color);
+}
+
+.Login{
+  display: flex;
+  flex-direction: column;
+  justify-items: left;
+  align-items: top;
+  width: 474px;
+  height: 191px;
+}
+
+.InputBox{
+  display: flex;
+  border: none;
+  font:  var(--P-fam) Thin 20px #304258;
+  border-bottom: solid 1px #304258;
+  margin-bottom: 32px;
+  width: 474px;
+  height: 68px;
+  margin-bottom: 55px;
+  background-color: #F4EFEB;
+}
+
+.formCol2{
+
+}
+
+.submitButton{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 474px; 
+  height: 85px;
+  background-color: #304258;
+  color: white;
+  font:  var(--P-fam) #304258;
+
+  font-weight: 600;
+  font-size: 36px;
+  border: none;
+  margin-bottom: 23px;
+} 
+.submitButton:hover{
+  background-color: #16263d;
+}
+.lowerText{
+  font-family:  var(--P-fam);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 474px;
+  color: #304258;
+}
+
+
+/* Styling for specific classes */
+.ThinText {
+  text-decoration: none;
+  font-weight: 200;
+  font-size: 14px;
+  color: var(--text-color); /* Use the color variable from your root */
+}
+
+.LinkText {
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding-left: 3px;
+  color: var(--primary-color); /* Set your preferred color */
+}
+
+/* Add hover effect */
+.LinkText:hover {
+  color: var(--button-hover); /* Slight color change on hover */
+}
+
