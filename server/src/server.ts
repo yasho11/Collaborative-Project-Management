@@ -2,6 +2,8 @@ import express from "express";
 import UserRoutes from "./routes/UserRoutes";
 import AuthRoutes from "./routes/AuthRoutes";
 import mongoose from "mongoose";
+import cors from "cors";
+import bodyparser from "body-parser";
 import dotenv from "dotenv";
 import WorkspaceRoutes from "./routes/WorkSpaceRoutes";
 import ProjectRoutes from "./routes/ProjectRoutes";
@@ -13,6 +15,10 @@ const PORT = process.env.PORT;
 
 app.use(express.json());
 app.use(express.static("public"));
+
+app.use(bodyparser.json());
+app.use(cors({ origin: "http://localhost:5173" }));
+
 //Routes
 app.use("/auth", AuthRoutes);
 app.use("/users", UserRoutes);
