@@ -5,6 +5,7 @@ import multer from "multer";
 import path from "path";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { promises } from "dns";
 
 //?-----------------------------------------------------
 dotenv.config();
@@ -51,26 +52,27 @@ const upload = multer({
 */
 export const register = async (req: Request, res: Response) => {
   console.log(req.body);
-  console.log(req.file);
-  const { Name, Email, Password } = req.body;
-  const ProfileURL = req.file ? `/uploads/${req.file.filename}` : null;
+  console.log("Register Triggerred");
+  const { name, email, password } = req.body;
+  // const ProfileURL = req.file ? `/uploads/${req.file.filename}` : null;
   const workspaceList: [] = [];
   const Role = "Member";
-  if (!Name || !Email || !Password) {
+  if (!name || !email || !password) {
+    console.log("Items not gotten");
   } else {
     try {
-      if (await User.findOne({ Email })) {
+      if (await User.findOne({ email })) {
         res.status(400).json({ message: "Email already taken!" });
       } else {
         const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(Password, salt);
+        const passwordHash = await bcrypt.hash(password, salt);
 
         const user = new User({
-          Name,
-          Email,
+          Name: name,
+          Email: email,
           Password: passwordHash,
           Role,
-          ProfileURL,
+          // ProfileURL,
           workspaceList,
         });
 
@@ -183,12 +185,12 @@ export const UpdateProfile = async (req: CustomRequest, res: Response) => {
         const salt = await bcrypt.genSalt(10);
         user.Password = await bcrypt.hash(req.body.UpUserPassword, salt);
       }
-      if (req.file) {
+      /*if (req.file) {
         const ProfileURL = req.file ? `/uploads/${req.file.filename}` : null;
         if (ProfileURL) {
           user.ProfileUrl = ProfileURL;
         }
-      }
+      }*/
     }
 
     await user?.save();
@@ -198,5 +200,24 @@ export const UpdateProfile = async (req: CustomRequest, res: Response) => {
   } catch (err: any) {
     console.error("Update error: ", err);
     res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const verifyPassword = async (
+  req: CustomRequest,
+  res: Response
+): Promise<any> => {
+  const UserEmail = req.UserEmail;
+  console.log(UserEmail);
+  try {
+    const user = await User.findOne({ Email: UserEmail });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const isMatch = await bcrypt.compare(req.body.password, user.Password);
+    if (!isMatch) return res.status(401).json({ success: false });
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
   }
 };
