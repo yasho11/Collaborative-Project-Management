@@ -1,7 +1,7 @@
 import Workspace from "../models/Workspace";
 import express, { Request, Response } from "express";
 import User from "../models/User";
-import { ObjectId } from "mongoose";
+import { ObjectId, Types } from "mongoose";
 import crypto from "crypto";
 //?----------------------------------------------------------------------------------------------
 /*
@@ -20,17 +20,14 @@ interface CustomRequest extends Request {
 !@desc: this will create a workspace
 !@access: Private(Users all)
 */
-
 export const createWorkspace = async (
-  req: CustomRequest,
+  req: Request,
   res: Response
 ): Promise<any> => {
   try {
     const { name, description } = req.body;
-    const UserEmail = req.UserEmail;
-    console.log(UserEmail);
+    const UserEmail = (req as any).UserEmail; // Ensure correct type casting
 
-    // Ensure email exists in request
     if (!UserEmail) {
       return res.status(401).json({ error: "Unauthorized access" });
     }
@@ -42,8 +39,6 @@ export const createWorkspace = async (
       return res.status(404).json({ error: "User not found" });
     }
 
-    const userId = user._id; // Extract user ID
-
     if (!name) {
       return res.status(400).json({ error: "Workspace name is required" });
     }
@@ -52,29 +47,24 @@ export const createWorkspace = async (
     const newWorkspace = new Workspace({
       name,
       description,
-      createdBy: userId,
-      members: [{ userId: userId, role: "Admin" }], // Auto-add creator as Admin
-      projects: [], // Empty projects initially
-      invites: [], //Empty Invites initially
+      createdBy: user._id,
+      members: [{ userId: user._id, role: "Admin" }],
+      projects: [],
+      invites: [],
     });
 
     // Save the workspace
     await newWorkspace.save();
 
-    // Add the new workspace ID to the user's workspaceList
-    user.workspaceList.push(newWorkspace._id as any); // Add the workspace ID to the user's workspaceList
-    await user.save(); // Save the updated user
-
-    // Populate workspaceList to get full workspace data
-    const userWithWorkspaces = await User.findOne({
-      Email: UserEmail,
-    }).populate("workspaceList");
+    const wsId: Types.ObjectId = newWorkspace._id as Types.ObjectId; // Correct typing
+    user.workspaceList.push(wsId); // Add workspace ID to user's list
+    await user.save();
 
     return res.status(201).json({
       success: true,
       message: "Workspace created successfully",
       workspace: newWorkspace,
-      user: userWithWorkspaces, // Returning updated user with populated workspace list
+      workspaceList: user.workspaceList, // Return updated list
     });
   } catch (error: any) {
     return res.status(500).json({
@@ -84,25 +74,37 @@ export const createWorkspace = async (
     });
   }
 };
-
 //?-------------------------------------------------------------------------------------------
 /*
-!@name:getallworkspace
-!@desc: fetches all workspace
-!@access: private(all user)
+!@name:getAllWorkspace
+!@desc: Fetches all workspaces the user is a part of (creator or member)
+!@access: Private (Authenticated Users Only)
 */
-export const getAllWorkspace = async (req: CustomRequest, res: Response) => {
-  const userEmail = req.UserEmail;
+export const getAllWorkspace = async (
+  req: CustomRequest,
+  res: Response
+): Promise<any> => {
+  const userId = req.id; // Extract user ID from request
 
-  if (!userEmail) {
-    res.status(401).json({ error: "UnAuthorized Access" });
+  if (!userId) {
+    return res.status(401).json({ error: "Unauthorized Access" });
   }
 
   try {
-    const workspaces = await Workspace.find();
-    res.status(200).json({ Success: "True", Message: workspaces });
+    const workspaces = await Workspace.find({
+      $or: [
+        { createdBy: userId }, // User is the creator
+        { "members.userId": userId }, // User is a member
+      ],
+    })
+      .populate("createdBy", "name email") // Populate creator details
+      .populate("members.userId", "name email") // Populate member details
+      .populate("projects"); // Populate projects if needed
+
+    res.status(200).json({ success: true, workspaces });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error fetching workspaces:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -169,6 +171,7 @@ export const updateWorkspace = async (
   req: CustomRequest,
   res: Response
 ): Promise<any> => {
+  console.log("Update Triggered");
   const { _id } = req.params;
   const userEmail = req.UserEmail;
   const userId = req.id;
@@ -193,11 +196,11 @@ export const updateWorkspace = async (
     );
 
     if (isMember && isAdmin) {
-      if (req.body.workspaceName) {
-        workspace.name = req.body.workspaceName;
+      if (req.body.name) {
+        workspace.name = req.body.name;
       }
-      if (req.body.workspaceDesc) {
-        workspace.description = req.body.workspaceDesc;
+      if (req.body.description) {
+        workspace.description = req.body.description;
       }
       await workspace?.save();
       return res.status(201).json({
@@ -502,3 +505,5 @@ export const makeAdmin = async (
       .json({ error: "Error promoting member", details: error });
   }
 };
+
+//?-------------------------------------------------------------------------------------

@@ -1,65 +1,81 @@
 import React, { useState } from "react";
-import styles from "./css/Login.module.css";
 import LogoSide from "../../assets/LogoSide.png";
 import api from "../../axios/api";
 import { useNavigate } from "react-router-dom";
-function Register(){
-  const [Name, SetName] = useState<string>('');
-  const [Email, SetEmail] = useState<string>('');
-  const [Password, SetPassword] = useState<string>('');
+
+function Register() {
+  const [name, setName] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
   const navigate = useNavigate();
-  const handleSubmit = async(e:React.FormEvent) =>{
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await api.post("/Auth/register", {
-        Email, 
-        Name, 
-        Password
+      const response = await api.post("/auth/register", {
+        name,
+        email,
+        password,
       });
       console.log(response.data);
-      console.log(`Message: ${response.data.message}`)
+      console.log(`Message: ${response.data.message}`);
       navigate("/login");
     } catch (error: any) {
-      console.error(error.response?.data || "Something went wrong")
+      console.error(error.response?.data || "Something went wrong");
     }
-  }
+  };
 
-  return(
-    <>
-<div className={styles.Container}>
-      <div className={styles.col}>
-        <img src={LogoSide} alt="" className="image"/>
+  return (
+    <div className="flex h-screen overflow-hidden text-[#304258]">
+      {/* Left Side - Logo */}
+      <div className="w-1/2 bg-[#304258] flex items-center justify-center">
+        <img src={LogoSide} alt="Logo" className="w-full " />
       </div>
-      <div className={styles.col}>
-      <div className={styles.formContainer}>
-      <div className={styles.formCol1}>
-      <div className={styles.text1}>
-        <h2>Glad to see you back!!</h2>
-      </div>
-      <form action="" className={styles.Login}>
-      <input type="test" className={styles.InputBox}value={Name} onChange={(e)=> {SetName(e.target.value)}} placeholder="Name"/>
-        <input type="email" className={styles.InputBox}value={Email} onChange={(e)=> {SetEmail(e.target.value)}} placeholder="Email"/>
-        <input type="password"className={styles.InputBox} value={Password} onChange={(e)=> {SetPassword(e.target.value)}} placeholder="Password"/>
-      </form>
-      </div>
-    <div className={styles.formCol2}>
-      <button onClick={handleSubmit} className={styles.submitButton}>
-        Login
-      </button>
-      <div className={styles.lowerText}>
-        <div className="createAccount">
-        <a href="#" className={styles.ThinText}>Already have a account?</a>
-        <a href="#" className={styles.LinkText}>Log In</a>
+
+      {/* Right Side - Form */}
+      <div className="w-1/2 flex flex-col items-center justify-center p-6 bg-[#F4EFEB] text-[#304258]">
+        <h2 className="text-2xl font-bold mb-4 text-[#304258]">Glad to see you!!</h2>
+
+        <form className="w-full max-w-sm flex flex-col gap-4" onSubmit={handleSubmit}>
+          <input
+            type="text"
+            className="border border-gray-300 p-2 rounded-md w-full"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Name"
+          />
+          <input
+            type="email"
+            className="border border-gray-300 p-2 rounded-md w-full"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+          />
+          <input
+            type="password"
+            className="border border-gray-300 p-2 rounded-md w-full"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+          />
+          <button
+          
+            type="submit"
+            className="bg-[#304258] text-white py-2 rounded-md w-full transition"
+          >
+            Register
+          </button>
+        </form>
+
+        <div className="mt-4 text-sm text-gray-600">
+          Already have an account?{" "}
+          <a href="/login" className="text-blue-500 hover:underline">
+            Log In
+          </a>
         </div>
       </div>
     </div>
-      </div>
-      </div>
-    </div>
-
-    </>
-  )
-
+  );
 }
 
-export  default Register;
+export default Register;
