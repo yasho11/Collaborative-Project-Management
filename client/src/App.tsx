@@ -7,6 +7,7 @@ import Profile from './component/Auth/Profile';
 import ViewWS from './component/Workspace/ViewWS';
 import ViewProject from './component/Project/ViewProject';
 import "font-awesome/css/font-awesome.min.css";
+import ViewTask from './component/Task/ViewTask';
 function App() {
 
   return (
@@ -17,7 +18,7 @@ function App() {
       <Route path="/profile" element={<Profile />} />
       <Route path="/workspace" element={<ViewWS/>}/>
       <Route path="/workspace/:workspaceId/projects" element={<ViewProject />} />
-
+      <Route path="/project/:projectId/tasks" element={<ViewTask />} />
       {/*<Route path="*" element={<NotFound />} />} { Catch-all for unknown routes */}
     </Routes>
   </Router>

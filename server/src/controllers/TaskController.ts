@@ -112,7 +112,7 @@ export const getAllTasks = async (
       .populate("createdBy", "name"); // Populating createdBy with user name (you can adjust this)
 
     if (tasks.length === 0) {
-      res.status(404).json({ message: "No tasks found for this user" });
+      res.status(204).json({ message: "No tasks found for this user" });
       return;
     }
 

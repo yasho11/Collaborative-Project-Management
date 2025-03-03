@@ -34,7 +34,7 @@ const WorkspaceList = () => {
 
 interface Workspace {
     _id: string;
-    name: string;
+    Name: string;
     description: string;
     projects?: any[];
     createdAt: string;
@@ -42,7 +42,7 @@ interface Workspace {
 
 interface NewWorkspace {
     _id: string;
-    name: string;
+    Name: string;
     description: string;
     projects?: any[];
     createdAt: string;
@@ -75,8 +75,7 @@ const DeleteWS = async (ws_id: string, e: React.FormEvent) => {
   
       // Ensure we always set an array, even if response.data.workspaces is undefined
       setWorkspaces(response.data.workspaces || []);
-  
-      navigate("/workspace");
+
     } catch (err) {
       console.error("Error deleting workspace:", err);
       setError("Failed to delete workspaces.");
@@ -116,18 +115,18 @@ const DeleteWS = async (ws_id: string, e: React.FormEvent) => {
               </div>
 
               {workspaces.map((ws) => (
-                <Link to={`/workspace/${ws._id}/projects`} key={ws._id}>
+                
                 <WorkspaceCard
                   key={ws._id}
                   workspaceId={ws._id}
-                  name={ws.name}
+                  name={ws.Name} 
                   description={ws.description}
                   projectsCount={ws.projects?.length || 0}
                   date={new Date(ws.createdAt).toLocaleDateString()}
                   onDelete={(e) => DeleteWS(ws._id, e)}
                   onEdit={() => handleEditWorkspace(ws)}
                 />
-              </Link>
+             
               ))}
 
             </div>

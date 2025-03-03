@@ -15,7 +15,7 @@ import {
 
 const router = Router();
 
-router.post("/", verifyToken, createProject);
+router.post("/:workspaceId", verifyToken, createProject);
 router.get("/ws/:workspaceid", verifyToken, getProjectByPeople);
 router.get("/:projectId", verifyToken, getProjectById);
 router.put("/:projectId", verifyToken, updateProject);
