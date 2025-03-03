@@ -16,7 +16,7 @@ interface CustomRequest extends Request {
 
 //?--------------------------------------------------------------------
 /*
-!@name: createProject
+!@Name: createProject
 !@desc: Creates a project inside a workspace
 !@access: Private (Only accessible to workspace Admin)
 */
@@ -26,8 +26,9 @@ export const createProject = async (
 ): Promise<any> => {
   console.log("/POST project/hit");
   try {
-    const { Name, Description, workspaceId, tasks, dueDate } = req.body;
+    const { Name, description, tasks, dueDate } = req.body;
     const createdBy = req.id;
+    const { workspaceId } = req.params;
     const userRole = req.role;
 
     // **1. Validate Required Fields**
@@ -53,8 +54,8 @@ export const createProject = async (
 
     // **4. Create New Project**
     const newProject = new Project({
-      Name,
-      Description,
+      Name: Name,
+      Description: description,
       workspaceId,
       createdBy,
       members: [{ userId: createdBy, role: "Admin" }], // Creator is Admin
@@ -70,6 +71,10 @@ export const createProject = async (
 
     // **5. Save Project**
     const savedProject = await newProject.save();
+    workspace.projects.push(savedProject._id as ObjectId);
+    await workspace.save();
+
+    await workspace.populate("projects");
 
     return res
       .status(201)
@@ -82,7 +87,7 @@ export const createProject = async (
 
 //?--------------------------------------------------------------------
 /*
-!@name: getAllProjects
+!@Name: getAllProjects
 !@desc: Get all projects for a user in a workspace
 !@access: Private (Only accessible to workspace members)
 */
@@ -133,7 +138,7 @@ export const getProjectByPeople = async (
 //?-------------------------------------------------------------------------------------------
 
 /*
-!@name: getProjectById
+!@Name: getProjectById
 !@desc: Get specific projects for a user in a workspace
 !@access: Private (Only accessible to project members)
 */
@@ -191,7 +196,7 @@ export const getProjectById = async (
 
 //?--------------------------------------------------------------------
 /*
-!@name: updateProject
+!@Name: updateProject
 !@desc: Update a project inside a workspace
 !@access: Private (Only accessible to project Admin)
 */
@@ -227,11 +232,11 @@ export const updateProject = async (
       if (req.body.Name) {
         project.Name = req.body.Name;
       }
-      if (req.body.Description) {
-        project.Description = req.body.Description;
+      if (req.body.description) {
+        project.Description = req.body.description;
       }
       if (req.body.dueDate) {
-        project.Name = req.body.dueDate;
+        project.dueDate = req.body.dueDate;
       }
 
       await project?.save();
@@ -253,7 +258,7 @@ export const updateProject = async (
 
 //?--------------------------------------------------------------------
 /*
-!@name: deleteProject
+!@Name: deleteProject
 !@desc: Delete a project inside a workspace
 !@access: Private (Only accessible to project Admin)
 */
@@ -312,7 +317,7 @@ export const deleteProject = async (
 
 //?--------------------------------------------------------------------
 /*
-!@name: addMemberToProject(req, res)
+!@Name: addMemberToProject(req, res)
 !@desc: Adding member to project
 !@access: Private (Only accessible to project Admin)
 */
@@ -361,7 +366,7 @@ export const addMemberToProject = async (
 //?-------------------------------------------------------------------------------------
 
 /*
-!@name:inviteMember
+!@Name:inviteMember
 !@desc: Generating and Storing the Invite Token  
 !@access: private(admin member of the workspace)
 */
@@ -401,7 +406,7 @@ export const inviteMember = async (
 //?-------------------------------------------------------------------------------------
 
 /*
-!@name:removeMember
+!@Name:removeMember
 !@desc: Removing members from the project
 !@access: private(admin member of the project)
 */
@@ -478,7 +483,7 @@ export const removeMember = async (
 //?-------------------------------------------------------------------------------------
 
 /*
-!@name:makeAdmin
+!@Name:makeAdmin
 !@desc: Adding another admin 
 !@access: private(admin member of the project)
 */

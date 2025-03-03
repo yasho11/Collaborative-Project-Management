@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IWorkspace extends Document {
-  name: string;
+  Name: string;
   description?: string;
   createdBy: mongoose.Schema.Types.ObjectId;
   members: { userId: mongoose.Schema.Types.ObjectId; role: string }[];
@@ -11,7 +11,7 @@ export interface IWorkspace extends Document {
 
 const workspaceSchema: Schema = new Schema(
   {
-    name: {
+    Name: {
       type: String,
       required: true,
     },

@@ -3,10 +3,16 @@ import api from "../../axios/api";
 
 interface AddItemModalProps {
   type: "workspace" | "project" | "task";
-  parentId?: string;
+  parentId?: string; // workspaceId for projects, projectId for tasks
   onClose: () => void;
   onAdd: (item: any) => void;
-  existingItem?: { _id: string; name: string; description: string } | null;
+  existingItem?: {
+    _id: string;
+    Name: string;
+    description: string;
+    dueDate?: string;
+    progress?: string;
+  } | null;
 }
 
 const AddItemModal: React.FC<AddItemModalProps> = ({
@@ -16,15 +22,19 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
   onAdd,
   existingItem,
 }) => {
-  const [name, setName] = useState(existingItem?.name || "");
+  const [Name, setName] = useState(existingItem?.Name || "");
   const [description, setDescription] = useState(existingItem?.description || "");
+  const [dueDate, setDueDate] = useState(existingItem?.dueDate || "");
+  const [progress, setProgress] = useState(existingItem?.progress || "Not Started");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (existingItem) {
-      setName(existingItem.name);
+      setName(existingItem.Name);
       setDescription(existingItem.description);
+      if (existingItem.dueDate) setDueDate(existingItem.dueDate);
+      if (existingItem.progress) setProgress(existingItem.progress);
     }
   }, [existingItem]);
 
@@ -34,29 +44,36 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
     setError(null);
 
     try {
-      let payload: any = { name, description };
-      let response;
+      let payload: any = { Name, description };
 
+      if (type === "project" || type === "task") {
+        payload.dueDate = dueDate;
+      }
+      if (type === "task") {
+        payload.progress = progress;
+      }
+
+      let response;
       if (existingItem) {
-        // If editing, send PUT request
-        response = await api.put(`/workspaces/${existingItem._id}`, payload);
+        // Update existing item
+        response = await api.put(`/${type}s/${existingItem._id}`, payload);
       } else {
-        let endpoint = "/workspaces/";
-        if (type === "project") {
-          endpoint = `/projects`;
-          payload.workspaceId = parentId;
-        } else if (type === "task") {
-          endpoint = `/tasks`;
-          payload.projectId = parentId;
-        }
-        response = await api.post(endpoint, payload);
+        // Ensure correct parent ID
+        if (type === "project" && !parentId) throw new Error("Workspace ID is required for projects.");
+        if (type === "task" && !parentId) throw new Error("Project ID is required for tasks.");
+
+        // Assign correct parent ID
+        if (type === "project") payload.workspaceId = parentId;
+        if (type === "task") payload.projectId = parentId;
+
+        response = await api.post(`/${type}s`, payload);
       }
 
       onAdd(response.data.workspace || response.data.project || response.data.task);
       onClose();
-    } catch (err) {
-      console.error("Error adding/updating item:", err);
-      setError("Failed to process. Please try again.");
+    } catch (err: any) {
+      console.error("Error:", err);
+      setError(err.response?.data?.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -65,28 +82,48 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
   return (
     <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50">
       <div className="bg-white p-6 rounded-lg w-96">
-        <h2 className="text-xl font-bold mb-4">
-          {existingItem ? `Edit ${type}` : `Add ${type}`}
-        </h2>
+        <h2 className="text-xl font-bold mb-4">{existingItem ? `Edit ${type}` : `Add ${type}`}</h2>
 
         {error && <p className="text-red-500">{error}</p>}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
             type="text"
-            placeholder="Enter name"
+            placeholder={`Enter ${type} Name`}
             className="border p-2 rounded"
-            value={name}
+            value={Name}
             onChange={(e) => setName(e.target.value)}
             required
           />
           <textarea
-            placeholder="Enter description"
+            placeholder={`Enter ${type} description`}
             className="border p-2 rounded"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
           ></textarea>
+
+          {(type === "project" || type === "task") && (
+            <input
+              type="date"
+              className="border p-2 rounded"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              required
+            />
+          )}
+
+          {type === "task" && (
+            <select
+              className="border p-2 rounded"
+              value={progress}
+              onChange={(e) => setProgress(e.target.value)}
+            >
+              <option value="Not Started">Not Started</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Completed">Completed</option>
+            </select>
+          )}
 
           <button type="submit" className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
             {loading ? "Saving..." : existingItem ? "Update" : "Add"}

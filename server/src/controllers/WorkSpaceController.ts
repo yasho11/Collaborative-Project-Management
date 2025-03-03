@@ -16,7 +16,7 @@ interface CustomRequest extends Request {
 //?----------------------------------------------------------------------------------------------
 
 /*
-!@name: createWorkspace
+!@Name: createWorkspace
 !@desc: this will create a workspace
 !@access: Private(Users all)
 */
@@ -25,7 +25,7 @@ export const createWorkspace = async (
   res: Response
 ): Promise<any> => {
   try {
-    const { name, description } = req.body;
+    const { Name, description } = req.body;
     const UserEmail = (req as any).UserEmail; // Ensure correct type casting
 
     if (!UserEmail) {
@@ -39,14 +39,14 @@ export const createWorkspace = async (
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (!name) {
-      return res.status(400).json({ error: "Workspace name is required" });
+    if (!Name) {
+      return res.status(400).json({ error: "Workspace Name is required" });
     }
 
     // Create new workspace
     const newWorkspace = new Workspace({
-      name,
-      description,
+      Name,
+      description: description,
       createdBy: user._id,
       members: [{ userId: user._id, role: "Admin" }],
       projects: [],
@@ -76,7 +76,7 @@ export const createWorkspace = async (
 };
 //?-------------------------------------------------------------------------------------------
 /*
-!@name:getAllWorkspace
+!@Name:getAllWorkspace
 !@desc: Fetches all workspaces the user is a part of (creator or member)
 !@access: Private (Authenticated Users Only)
 */
@@ -97,8 +97,8 @@ export const getAllWorkspace = async (
         { "members.userId": userId }, // User is a member
       ],
     })
-      .populate("createdBy", "name email") // Populate creator details
-      .populate("members.userId", "name email") // Populate member details
+      .populate("createdBy", "Name email") // Populate creator details
+      .populate("members.userId", "Name email") // Populate member details
       .populate("projects"); // Populate projects if needed
 
     res.status(200).json({ success: true, workspaces });
@@ -111,7 +111,7 @@ export const getAllWorkspace = async (
 //?-------------------------------------------------------------------------------------------
 
 /*
-!@name:getworkspaceById
+!@Name:getworkspaceById
 !@desc: fetches all workspace
 !@access: private(memeber user)
 */
@@ -162,7 +162,7 @@ export const getWorkspaceById = async (
 
 //?-------------------------------------------------------------------------------------------
 /*
-!@name:updateWorkspace
+!@Name:updateWorkspace
 !@desc: Updates Workspace information  
 !@access: private(admin member of the workspace)
 */
@@ -196,8 +196,8 @@ export const updateWorkspace = async (
     );
 
     if (isMember && isAdmin) {
-      if (req.body.name) {
-        workspace.name = req.body.name;
+      if (req.body.Name) {
+        workspace.Name = req.body.Name;
       }
       if (req.body.description) {
         workspace.description = req.body.description;
@@ -219,7 +219,7 @@ export const updateWorkspace = async (
 //?-------------------------------------------------------------------------------------
 
 /*
-!@name:deleteWorkspace
+!@Name:deleteWorkspace
 !@desc: Delete Workspace   
 !@access: private(admin member of the workspace)
 */
@@ -271,7 +271,7 @@ export const deleteWorkspace = async (
 //?-------------------------------------------------------------------------------------
 
 /*
-!@name:inviteMember
+!@Name:inviteMember
 !@desc: Generating and Storing the Invite Token  
 !@access: private(admin member of the workspace)
 */
@@ -311,7 +311,7 @@ export const inviteMember = async (
 //?-------------------------------------------------------------------------------------
 
 /*
-!@name:addMember
+!@Name:addMember
 !@desc: Validating the Token and Adding the User  
 !@access: private(user)
 */
@@ -366,7 +366,7 @@ export const addMember = async (
 //?-------------------------------------------------------------------------------------
 
 /*
-!@name:removeMember
+!@Name:removeMember
 !@desc: Removing members from the workspace
 !@access: private(admin member of the workspace)
 */
@@ -440,7 +440,7 @@ export const removeMember = async (
 //?-------------------------------------------------------------------------------------
 
 /*
-!@name:makeAdmin
+!@Name:makeAdmin
 !@desc: Adding another admin 
 !@access: private(admin member of the workspace)
 */

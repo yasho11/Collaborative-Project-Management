@@ -4,20 +4,21 @@ import SideBar from "../componentSM/Sidebar";
 import { FaPlus } from "react-icons/fa";
 import api from "../../axios/api";
 import AddItemModal from "../componentSM/AddModalComponent";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 interface Project {
   _id: string;
-  name: string;
+  Name: string;
   description: string;
   dueDate: string;
-  progress: number;
+  progress?: any;
 }
 
 const ProjectList = () => {
   const [projects, setProjects] = useState<Project[]>([]);
+  const { workspaceId } = useParams();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<String | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -25,9 +26,18 @@ const ProjectList = () => {
 
   useEffect(() => {
     const fetchProjects = async () => {
+      if (!workspaceId) {
+        setError("Workspace ID is missing.");
+        return;
+      }
+
       try {
-        const response = await api.get("/projects");
-        setProjects(response.data.projects);
+        console.log("Fetching projects for workspace ID:", workspaceId);
+        const response = await api.get(`projects/ws/${workspaceId}`);
+        console.log("API Response:", response.data);
+
+        // Ensure projects is an array before updating state
+        setProjects(Array.isArray(response.data.projects) ? response.data.projects : []);
       } catch (err) {
         console.error("Error fetching projects:", err);
         setError("Failed to load projects.");
@@ -37,37 +47,32 @@ const ProjectList = () => {
     };
 
     fetchProjects();
-  }, []);
+  }, [workspaceId]);
 
-  // Handle adding a new project
   const handleAddProject = (newProject: Project) => {
-    setProjects([...projects, newProject]);
+    setProjects((prev) => [...prev, newProject]);
   };
 
-  // Handle updating an existing project
   const handleUpdateProject = (updatedProject: Project) => {
-    setProjects(
-      projects.map((p) => (p._id === updatedProject._id ? updatedProject : p))
+    setProjects((prev) =>
+      prev.map((p) => (p._id === updatedProject._id ? updatedProject : p))
     );
   };
 
-  // Handle opening the modal for editing
   const handleEditProject = (project: Project) => {
     setSelectedProject(project);
     setEditMode(true);
     setShowModal(true);
   };
 
-  // Handle deleting a project
-  const DeleteProject = async (project_id: string, e: React.FormEvent) => {
+  const deleteProject = async (projectId: string, e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await api.delete(`/projects/${project_id}`);
-      setProjects(response.data.projects || []);
-      navigate("/projects");
+      await api.delete(`/projects/${projectId}`);
+      setProjects((prev) => prev.filter((p) => p._id !== projectId));
     } catch (err) {
       console.error("Error deleting project:", err);
-      setError("Failed to delete projects.");
+      setError("Failed to delete project.");
     }
   };
 
@@ -87,7 +92,6 @@ const ProjectList = () => {
           <p className="text-center text-red-500">{error}</p>
         ) : (
           <div className="grid grid-cols-3 gap-6">
-            {/* Add New Project Card */}
             <div
               className="bg-[#C7D9E5] flex flex-col justify-center items-center p-4 rounded-lg cursor-pointer hover:bg-gray-300 transition"
               onClick={() => {
@@ -103,22 +107,22 @@ const ProjectList = () => {
             {projects.map((project) => (
               <ProjectCard
                 key={project._id}
-                name={project.name}
+                projectId={project._id}
+                name={project.Name}
                 dueDate={new Date(project.dueDate).toLocaleDateString()}
-                progress={project.progress}
+                progress={project.progress?.completionPercentage || 0}
                 onEdit={() => handleEditProject(project)}
-                onDelete = {(e)=> DeleteProject(project._id,e)}
+                onDelete={(e) => deleteProject(project._id, e)}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Show modal when needed */}
       {showModal && (
         <AddItemModal
           type="project"
-          parentId=""
+          parentId={workspaceId}
           onClose={() => setShowModal(false)}
           onAdd={editMode ? handleUpdateProject : handleAddProject}
           existingItem={selectedProject}
