@@ -6,8 +6,8 @@ interface TaskItemProps {
   dueDate?: string;
   progress: string;
   onProgressChange: (newProgress: string) => void;
-  onCommentClick: (e:React.FormEvent) => Promise<void>;
   onDeleteClick: (e: React.FormEvent) => Promise<void>;
+  onCommentClick:() => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -15,40 +15,23 @@ const TaskItem: React.FC<TaskItemProps> = ({
   dueDate,
   progress,
   onProgressChange,
-  onCommentClick,
   onDeleteClick,
 }) => {
+  const formattedDate = dueDate ? new Date(dueDate).toLocaleDateString("en-GB") : "No due date";
   return (
     <div className="flex items-center justify-between bg-blue-100 px-4 py-2 rounded-md">
-      {/* Left: Task Info */}
       <div className="flex flex-col">
         <span className="text-lg font-semibold">{name}</span>
-        {dueDate && <span className="text-sm text-gray-600">{dueDate}</span>}
+        <span className="text-sm text-gray-600">{formattedDate}</span>
       </div>
 
-      {/* Right: Progress, Comments, Delete */}
-      <div className="flex items-center space-x-4">
-        {/* Progress Dropdown */}
-        <select
-          className="bg-gray-700 text-white px-3 py-1 rounded-md"
-          value={progress}
-          onChange={(e) => onProgressChange(e.target.value)}
-        >
-          <option value="Not Started">Not Started</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Completed">Completed</option>
-        </select>
+      <select value={progress} onChange={(e) => onProgressChange(e.target.value)} className="bg-gray-700 text-white px-3 py-1 rounded-md">
+        <option value="Not Started">Not Started</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Completed">Completed</option>
+      </select>
 
-        {/* Comment Button */}
-        <button onClick={onCommentClick} className="text-gray-600 hover:text-gray-800">
-          💬
-        </button>
-
-        {/* Delete Button */}
-        <button onClick={(e) => onDeleteClick(e)} className="text-gray-600 hover:text-red-600">
-          🗑️
-        </button>
-      </div>
+      <button onClick={onDeleteClick} className="text-gray-600 hover:text-red-600">🗑️</button>
     </div>
   );
 };

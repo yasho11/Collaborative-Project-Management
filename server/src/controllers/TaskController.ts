@@ -33,25 +33,12 @@ export const createTask = async (
       return res.status(401).json({ error: "Unauthorized access" });
     }
 
-    const {
-      title,
-      description,
-      projectId,
-      assignedTo,
-      status,
-      priority,
-      dueDate,
-    } = req.body;
+    const { title, description, projectId, status, priority, dueDate } =
+      req.body;
 
     // Validate required fields
-    if (!title || !projectId || !assignedTo) {
+    if (!title || !projectId) {
       return res.status(400).json({ error: "Title, projectId are required" });
-    }
-
-    // Check if assigned user exists
-    const userExists = await User.findById(assignedTo);
-    if (!userExists) {
-      return res.status(404).json({ error: "Assigned user not found" });
     }
 
     // Create a new task
@@ -59,7 +46,6 @@ export const createTask = async (
       title,
       description,
       projectId,
-      assignedTo,
       status: status || "Not Started",
       priority: priority || "Medium",
       dueDate,
@@ -96,29 +82,26 @@ export const createTask = async (
 export const getAllTasks = async (
   req: CustomRequest,
   res: Response
-): Promise<void> => {
+): Promise<any> => {
   try {
-    const userId = req.id; // Assuming userId is passed as a parameter in the route
+    const userId = req.id;
+    const { projectId } = req.params;
+    console.log(`Project ID: ${projectId}`);
 
     if (!userId) {
-      res.status(400).json({ message: "Invalid user ID" });
-      return;
+      return res.status(400).json({ message: "Invalid user ID" });
     }
 
-    // Fetch tasks assigned to the user, optionally filter by status or project if needed
-    const tasks = await Task.find({ assignedTo: userId })
-      .populate("projectId", "title") // Populating projectId with project title (you can adjust this)
-      .populate("assignedTo", "name") // Populating assignedTo with user name (you can adjust this)
-      .populate("createdBy", "name"); // Populating createdBy with user name (you can adjust this)
+    // Convert projectId to ObjectId
+    const projectObjectId = new mongoose.Types.ObjectId(projectId);
 
-    if (tasks.length === 0) {
-      res.status(204).json({ message: "No tasks found for this user" });
-      return;
-    }
-
-    res.status(200).json(tasks);
+    const tasks = await Task.find({ projectId: projectObjectId })
+      .populate("projectId", "title")
+      .populate("createdBy", "name");
+    console.log(tasks);
+    res.status(200).json(tasks.length > 0 ? tasks : []);
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching tasks:", error);
     res.status(500).json({ message: "Server error, unable to fetch tasks" });
   }
 };
@@ -145,7 +128,6 @@ export const getTaskById = async (
     // Fetch the task by its ID
     const task = await Task.findById(taskId)
       .populate("projectId", "title") // Populating projectId with project title
-      .populate("assignedTo", "name") // Populating assignedTo with user name
       .populate("createdBy", "name"); // Populating createdBy with user name
 
     if (!task) {
@@ -195,7 +177,6 @@ export const updateTask = async (
       runValidators: true, // Ensure validators are run for the updated fields
     })
       .populate("projectId", "title") // Populating projectId with project title
-      .populate("assignedTo", "name") // Populating assignedTo with user name
       .populate("createdBy", "name"); // Populating createdBy with user name
 
     if (!updatedTask) {
@@ -288,14 +269,10 @@ export const assignTask = async (
       return;
     }
 
-    // Find the task by ID and update the 'assignedTo' field
-    const updatedTask = await Task.findByIdAndUpdate(
-      taskId,
-      { assignedTo: userId },
-      { new: true, runValidators: true }
-    )
-      .populate("assignedTo", "name") // Populate assigned user name for better readability
-      .populate("projectId", "Name"); // Populate project name
+    const updatedTask = await Task.findByIdAndUpdate(taskId, {
+      new: true,
+      runValidators: true,
+    }).populate("projectId", "Name"); // Populate project name
 
     if (!updatedTask) {
       res.status(404).json({ message: "Task not found" });

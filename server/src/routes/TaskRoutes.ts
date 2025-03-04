@@ -15,7 +15,7 @@ import {
 const router = Router();
 
 router.post("/", verifyToken, createTask); // Create a new task
-router.get("/", verifyToken, getAllTasks); //Get all task assigned   to thae  logged in  user
+router.get("/:projectId", verifyToken, getAllTasks); //Get all task assigned   to thae  logged in  user
 router.get("/:taskId", verifyToken, getTaskById); //get details of specific task
 router.put("/:taskId", verifyToken, updateTask); //update task detail
 router.delete("/:taskId", verifyToken, deleteTask); //delete task

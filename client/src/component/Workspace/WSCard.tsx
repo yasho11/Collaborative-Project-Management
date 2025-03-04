@@ -46,7 +46,7 @@ const WSCard: React.FC<WorkspaceProps> = ({
       <FaEdit className="absolute bottom-4 right-4 text-gray-300 hover:text-green-400 cursor-pointer" onClick={onEdit} />
 
       {/* Link to Projects Page */}
-      <Link to={`workspace/${workspaceId}/projects`} className="text-blue-300 mt-4 block text-sm underline">
+      <Link to={`/workspace/${workspaceId}/projects`} className="text-blue-300 mt-4 block text-sm underline">
         View Projects
       </Link>
     </div>
