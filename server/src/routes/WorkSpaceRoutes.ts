@@ -4,6 +4,7 @@ import {
   createWorkspace,
   deleteWorkspace,
   getAllWorkspace,
+  getMember,
   getWorkspaceById,
   inviteMember,
   makeAdmin,
@@ -19,6 +20,7 @@ router.get("/", verifyToken, getAllWorkspace);
 router.get("/:_id", verifyToken, getWorkspaceById);
 router.put("/:_id", verifyToken, updateWorkspace);
 router.delete("/:_id", verifyToken, deleteWorkspace);
+router.get("/member/:WorkspaceId", verifyToken, getMember);
 router.post("/join", verifyToken, addMember);
 router.delete("/:_id/members/:DeleteId", verifyToken, removeMember);
 router.post("/invite", verifyToken, inviteMember);

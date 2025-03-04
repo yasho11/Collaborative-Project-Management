@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from "../../axios/api";
 
 interface AddItemModalProps {
-  type: "workspace" | "project" | "task";
+  type: "workspace" | "project" ;
   parentId?: string; // workspaceId for projects, projectId for tasks
   onClose: () => void;
   onAdd: (item: any) => void;
@@ -46,13 +46,9 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
     try {
       let payload: any = { Name, description };
 
-      if (type === "project" || type === "task") {
+      if (type === "project") {
         payload.dueDate = dueDate;
       }
-      if (type === "task") {
-        payload.progress = progress;
-      }
-
       let response;
       if (existingItem) {
         // Update existing item
@@ -60,13 +56,11 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
       } else {
         // Ensure correct parent ID
         if (type === "project" && !parentId) throw new Error("Workspace ID is required for projects.");
-        if (type === "task" && !parentId) throw new Error("Project ID is required for tasks.");
 
         // Assign correct parent ID
         if (type === "project") payload.workspaceId = parentId;
-        if (type === "task") payload.projectId = parentId;
 
-        response = await api.post(`/${type}s`, payload);
+        response = await api.post(`/${type}s/${parentId}`, payload);
       }
 
       onAdd(response.data.workspace || response.data.project || response.data.task);
@@ -103,7 +97,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
             required
           ></textarea>
 
-          {(type === "project" || type === "task") && (
+          {(type === "project" ) && (
             <input
               type="date"
               className="border p-2 rounded"
@@ -113,7 +107,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
             />
           )}
 
-          {type === "task" && (
+          { (
             <select
               className="border p-2 rounded"
               value={progress}

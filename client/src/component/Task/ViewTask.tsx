@@ -5,6 +5,7 @@ import { FaPlus } from "react-icons/fa";
 import api from "../../axios/api";
 import { useParams } from "react-router-dom";
 import TaskForm from "./TaskForm";
+import MemberListPopup from "../Member/ViewMember";
 
 interface Task {
   _id: string;
@@ -15,12 +16,20 @@ interface Task {
   priority: string;
 }
 
+interface Member {
+  _id: string;
+  name: string;
+  role: string;
+}
+
 const TaskList = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const { projectId } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [isMemberPopupOpen, setIsMemberPopupOpen] = useState(false);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -29,22 +38,19 @@ const TaskList = () => {
         setLoading(false);
         return;
       }
-  
+
       try {
         const response = await api.get(`/tasks/${projectId}`);
-        console.log("Fetched tasks:", response.data);
-        setTasks(response.data); // ✅ Ensuring tasks update correctly
+        setTasks(response.data);
       } catch (err) {
-        console.error("Error fetching tasks:", err);
         setError("Failed to load tasks.");
       } finally {
         setLoading(false);
       }
     };
-  
+
     fetchTasks();
-  }, [projectId]); // ❌ Removed `tasks` dependency to prevent unnecessary re-renders
-  
+  }, [projectId]);
 
   const handleAddTask = (newTask: Task) => {
     setTasks((prev) => [...prev, newTask]);
@@ -56,16 +62,14 @@ const TaskList = () => {
       await api.delete(`/tasks/${taskId}`);
       setTasks((prev) => prev.filter((task) => task._id !== taskId));
     } catch (err) {
-      console.error("Error deleting task:", err);
       setError("Failed to delete task.");
     }
   };
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     try {
-      const response = await api.put(`/tasks/${taskId}`, { status: newStatus });
-      console.log("Updated Task Response:", response.data);
-      
+      await api.put(`/tasks/${taskId}`, { status: newStatus });
+
       setTasks((prev) =>
         prev.map((task) =>
           task._id === taskId ? { ...task, status: newStatus } : task
@@ -75,12 +79,34 @@ const TaskList = () => {
       console.error("Error updating task status:", err);
     }
   };
-  
 
-  // New: Handle Comments Button Click
-  const handleCommentClick = () => {
-    console.log("Comment button clicked!");
-    // You can replace this with a function to open a comment modal
+  const handleFetchMembers = async () => {
+    if (!projectId) {
+      setError("Project ID is missing.");
+      return;
+    }
+
+    try {
+      const response = await api.get(`/projects/member/${projectId}`);
+      setMembers(response.data.members);
+      setIsMemberPopupOpen(true);
+    } catch (err) {
+      setError("Failed to load project members.");
+    }
+  };
+
+  const handleDeleteMember = async (memberId: string) => {
+    if (!projectId) {
+      setError("Project ID is missing.");
+      return;
+    }
+
+    try {
+      await api.delete(`/projects/member/${projectId}/${memberId}`);
+      setMembers((prev) => prev.filter((member) => member._id !== memberId));
+    } catch (err) {
+      setError("Failed to delete member.");
+    }
   };
 
   return (
@@ -91,13 +117,20 @@ const TaskList = () => {
         <h1 className="text-3xl font-bold text-gray-700">Your Tasks</h1>
         <p className="text-gray-500 mb-4">Keep track of your progress and stay productive.</p>
 
+        {/* Button to Show Project Members */}
+        <button
+          onClick={handleFetchMembers}
+          className="mb-4 text-underline text-black"
+        >
+          View Project Members
+        </button>
+
         {loading ? (
           <p className="text-center text-gray-500">Loading tasks...</p>
         ) : error ? (
           <p className="text-center text-red-500">{error}</p>
         ) : (
           <div className="grid grid-cols-3 gap-6">
-            {/* Add New Task Button */}
             <div
               className="bg-[#C7D9E5] flex flex-col justify-center items-center p-4 rounded-lg cursor-pointer hover:bg-gray-300 transition"
               onClick={() => setModalOpen(true)}
@@ -106,23 +139,24 @@ const TaskList = () => {
               <p className="mt-2 text-gray-600 font-semibold">Add a new task</p>
             </div>
 
-            {tasks && tasks.length > 0 ? (
-  tasks.map((task) => (
-    <TaskItem
-      key={task._id}
-      taskId={task._id}
-      name={task.title}
-      dueDate={task.dueDate}
-      progress={task.status}
-      onProgressChange={(newStatus) => handleStatusChange(task._id, newStatus)}
-      onCommentClick={handleCommentClick}
-      onDeleteClick={(e) => handleDeleteTask(task._id, e)}
-    />
-  ))
-) : (
-  <p className="text-center text-gray-500">No tasks found.</p>
-)}
-
+            {tasks.length > 0 ? (
+              tasks.map((task) => (
+                <TaskItem
+                  key={task._id}
+                  taskId={task._id}
+                  name={task.title}
+                  dueDate={task.dueDate}
+                  progress={task.status}
+                  onProgressChange={(newStatus) =>
+                    handleStatusChange(task._id, newStatus)
+                  }
+                  onDeleteClick={(e) => handleDeleteTask(task._id, e)}
+                  onCommentClick={() => console.log("Comment clicked")}
+                />
+              ))
+            ) : (
+              <p className="text-center text-gray-500">No tasks found.</p>
+            )}
           </div>
         )}
       </div>
@@ -134,6 +168,15 @@ const TaskList = () => {
             <TaskForm onClose={() => setModalOpen(false)} onSubmit={handleAddTask} />
           </div>
         </div>
+      )}
+
+      {/* Member List Popup */}
+      {isMemberPopupOpen && (
+        <MemberListPopup
+          members={members}
+          onClose={() => setIsMemberPopupOpen(false)}
+          onDeleteMember={handleDeleteMember}
+        />
       )}
     </div>
   );
