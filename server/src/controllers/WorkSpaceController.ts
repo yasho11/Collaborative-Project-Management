@@ -3,6 +3,7 @@ import express, { Request, Response } from "express";
 import User from "../models/User";
 import { ObjectId, Types } from "mongoose";
 import crypto from "crypto";
+import mongoose from "mongoose";
 //?----------------------------------------------------------------------------------------------
 /*
 !@desc: interface to define UserEmail!
@@ -507,3 +508,54 @@ export const makeAdmin = async (
 };
 
 //?-------------------------------------------------------------------------------------
+
+/*
+!@Name:getMember
+!@desc: View the member of the porject 
+!@access: private(member of the Workspace)
+*/
+
+export const getMember = async (req: Request, res: Response): Promise<any> => {
+  const { WorkspaceId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(WorkspaceId)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid Workspace ID",
+    });
+  }
+
+  try {
+    const WorkSpace = await Workspace.findById(WorkspaceId);
+
+    if (!WorkSpace) {
+      return res.status(404).json({
+        success: false,
+        message: "Workspace not found",
+      });
+    }
+
+    // Fetch user details for each member
+    const listOfMembers = await Promise.all(
+      WorkSpace.members.map(async (member) => {
+        const user = await User.findById(member.userId).select("Name"); // Fetch username
+        return {
+          userId: member.userId,
+          role: member.role,
+          name: user ? user.Name : "Unknown User", // Handle missing user
+        };
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      members: listOfMembers,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};

@@ -5,6 +5,7 @@ import {
   addMemberToProject,
   createProject,
   deleteProject,
+  getMember,
   getProjectById,
   getProjectByPeople,
   inviteMember,
@@ -20,6 +21,7 @@ router.get("/ws/:workspaceid", verifyToken, getProjectByPeople);
 router.get("/:projectId", verifyToken, getProjectById);
 router.put("/:projectId", verifyToken, updateProject);
 router.delete("/:id", verifyToken, deleteProject);
+router.get("/member/:projectId", verifyToken, getMember);
 router.post("/join", verifyToken, addMemberToProject);
 router.post("/invite", verifyToken, inviteMember);
 router.post("/:_id/addAdmin", verifyToken, makeAdmin);

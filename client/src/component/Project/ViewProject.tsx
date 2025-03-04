@@ -5,6 +5,7 @@ import { FaPlus } from "react-icons/fa";
 import api from "../../axios/api";
 import AddItemModal from "../componentSM/AddModalComponent";
 import { useNavigate, useParams } from "react-router-dom";
+import MemberListPopup from "../Member/ViewMember";
 
 interface Project {
   _id: string;
@@ -12,6 +13,12 @@ interface Project {
   description: string;
   dueDate: string;
   progress?: any;
+}
+
+interface Member {
+  _id: string;
+  name: string;
+  role: string;
 }
 
 const ProjectList = () => {
@@ -22,6 +29,9 @@ const ProjectList = () => {
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [isMemberPopupOpen, setIsMemberPopupOpen] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,7 +46,6 @@ const ProjectList = () => {
         const response = await api.get(`projects/ws/${workspaceId}`);
         console.log("API Response:", response.data);
 
-        // Ensure projects is an array before updating state
         setProjects(Array.isArray(response.data.projects) ? response.data.projects : []);
       } catch (err) {
         console.error("Error fetching projects:", err);
@@ -76,6 +85,38 @@ const ProjectList = () => {
     }
   };
 
+  const handleFetchMembers = async () => {
+    if (!workspaceId) {
+      setError("Workspace ID is missing.");
+      return;
+    }
+
+    try {
+      const response = await api.get(`/workspaces/member/${workspaceId}`);
+      setMembers(response.data.members);
+      console.log(response.data.members);
+      setIsMemberPopupOpen(true);
+    } catch (err) {
+      setError("Failed to load workspace members.");
+    }
+  };
+
+  const handleDeleteMember = async (memberId: string) => {
+    if (!workspaceId) {
+      setError("Workspace ID is missing.");
+      return;
+    }
+
+    try {
+      await api.delete(`/workspaces/member/${workspaceId}/${memberId}`);
+      setMembers((prev) => prev.filter((member) => member._id !== memberId));
+      console.log(`Deleted member with ID: ${memberId}`);
+    } catch (err) {
+      console.error("Failed to delete member:", err);
+      setError("Failed to delete member.");
+    }
+  };
+
   return (
     <div className="bg-[#304258] flex flex-row min-h-screen overflow-hidden">
       <SideBar />
@@ -85,6 +126,14 @@ const ProjectList = () => {
         <p className="text-gray-500 mb-4">
           Keep track of your progress and stay productive.
         </p>
+
+        {/* Button to Show Project Members */}
+        <button
+          onClick={handleFetchMembers}
+          className="mb-4 text-black underline"
+        >
+          View Workspace Members
+        </button>
 
         {loading ? (
           <p className="text-center text-gray-500">Loading projects...</p>
@@ -126,6 +175,15 @@ const ProjectList = () => {
           onClose={() => setShowModal(false)}
           onAdd={editMode ? handleUpdateProject : handleAddProject}
           existingItem={selectedProject}
+        />
+      )}
+
+      {/* Member List Popup */}
+      {isMemberPopupOpen && (
+        <MemberListPopup
+          members={members}
+          onClose={() => setIsMemberPopupOpen(false)}
+          onDeleteMember={handleDeleteMember}
         />
       )}
     </div>
