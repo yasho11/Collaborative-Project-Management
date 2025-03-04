@@ -1,56 +1,44 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import api from "../../axios/api";
+import { useParams } from "react-router-dom";
 
 interface TaskFormProps {
-  type: "add" | "edit";
-  taskData?: {
-    _id: string;
-    title: string;
-    description: string;
-    status: string;
-    dueDate: string;
-  };
   onClose: () => void;
   onSubmit: (task: any) => void;
 }
 
-const TaskForm: React.FC<TaskFormProps> = ({ type, taskData, onClose, onSubmit }) => {
-  const [title, setTitle] = useState(taskData?.title || "");
-  const [description, setDescription] = useState(taskData?.description || "");
-  const [status, setStatus] = useState(taskData?.status || "Not Started");
-  const [dueDate, setDueDate] = useState(taskData?.dueDate || "");
-
-  useEffect(() => {
-    if (taskData) {
-      setTitle(taskData.title);
-      setDescription(taskData.description);
-      setStatus(taskData.status);
-      setDueDate(taskData.dueDate);
-    }
-  }, [taskData]);
+const TaskForm: React.FC<TaskFormProps> = ({ onClose, onSubmit }) => {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [priority, setPriority] = useState("Medium");
+  const { projectId } = useParams();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      if (type === "add") {
-        const response = await api.post("/tasks/", { title, description, dueDate, status });
-        onSubmit(response.data.task);
-      } else if (type === "edit" && taskData) {
-        const response = await api.put(`/tasks/${taskData._id}`, { title, description, dueDate, status });
-        onSubmit(response.data.task);
-      }
+      const response = await api.post("/tasks/", {
+        title,
+        description,
+        dueDate,
+        status: "Not Started", // Default status when adding
+        priority,
+        projectId,
+      });
+
+      onSubmit(response.data.task);
       onClose();
     } catch (error) {
-      console.error("Error submitting task:", error);
+      console.error("Error adding task:", error);
     }
   };
 
   return (
     <div className="modal-bg">
       <div className="modal-content">
-        <h2 className="text-xl font-bold">{type === "add" ? "Add Task" : "Edit Task"}</h2>
-        
+        <h2 className="text-xl font-bold">Add Task</h2>
+
         <form onSubmit={handleSubmit} className="flex flex-col space-y-3">
           <input
             type="text"
@@ -58,14 +46,14 @@ const TaskForm: React.FC<TaskFormProps> = ({ type, taskData, onClose, onSubmit }
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            className="input-field"
+            className="border-1 mt-5 p-3 bg-[#F5EFEB]"
           />
 
           <textarea
             placeholder="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="input-field"
+            className="border-1 mt-5 p-3 bg-[#F5EFEB]"
           />
 
           <input
@@ -73,18 +61,20 @@ const TaskForm: React.FC<TaskFormProps> = ({ type, taskData, onClose, onSubmit }
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
             required
-            className="input-field"
+            className="border-1 mt-5 p-3 bg-[#F5EFEB]"
           />
 
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className="input-field">
-            <option value="Not Started">Not Started</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
+          <select value={priority} onChange={(e) => setPriority(e.target.value)} className="border-1 mt-5 p-3 bg-[#F5EFEB]">
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
           </select>
 
-          <div className="flex justify-end space-x-2">
-            <button type="button" onClick={onClose} className="btn-cancel">Cancel</button>
-            <button type="submit" className="btn-primary">{type === "add" ? "Add Task" : "Update"}</button>
+          <div className="flex justify-center space-x-2 mt-4">
+            <button type="button" onClick={onClose} className="bg-red-400 p-2 mx-3 hover:bg-red-500">
+              Cancel
+            </button>
+            <button type="submit" className="bg-green-400 p-2 mx-3 hover:bg-green-500">Add Task</button>
           </div>
         </form>
       </div>

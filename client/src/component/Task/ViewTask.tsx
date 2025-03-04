@@ -3,9 +3,8 @@ import TaskItem from "./TaskItem";
 import SideBar from "../componentSM/Sidebar";
 import { FaPlus } from "react-icons/fa";
 import api from "../../axios/api";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import TaskForm from "./TaskForm";
-import { Link } from "react-router-dom";
 
 interface Task {
   _id: string;
@@ -13,6 +12,7 @@ interface Task {
   description: string;
   dueDate: string;
   status: string;
+  priority: string;
 }
 
 const TaskList = () => {
@@ -21,27 +21,19 @@ const TaskList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editMode, setEditMode] = useState<"add" | "edit">("add");
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   useEffect(() => {
     const fetchTasks = async () => {
       if (!projectId) {
-        setError("Porject ID is missing.");
-        console.log("Porject ID is missing.");
+        setError("Project ID is missing.");
+        setLoading(false);
         return;
       }
-
+  
       try {
-        const response = await api.get(`/tasks/`);
-        if(response.status == 404){
-            setLoading(false);
-            console.log("No data to show")
-        }else{
-            setTasks(response.data.tasks);
-            console.log(tasks)
-        }
-
+        const response = await api.get(`/tasks/${projectId}`);
+        console.log("Fetched tasks:", response.data);
+        setTasks(response.data); // ✅ Ensuring tasks update correctly
       } catch (err) {
         console.error("Error fetching tasks:", err);
         setError("Failed to load tasks.");
@@ -49,34 +41,46 @@ const TaskList = () => {
         setLoading(false);
       }
     };
-
+  
     fetchTasks();
-  }, [projectId]);
+  }, [projectId]); // ❌ Removed `tasks` dependency to prevent unnecessary re-renders
+  
 
   const handleAddTask = (newTask: Task) => {
     setTasks((prev) => [...prev, newTask]);
-  };
-
-  const handleUpdateTask = (updatedTask: Task) => {
-    setTasks((prev) => prev.map((p) => (p._id === updatedTask._id ? updatedTask : p)));
   };
 
   const handleDeleteTask = async (taskId: string, e: React.FormEvent) => {
     e.preventDefault();
     try {
       await api.delete(`/tasks/${taskId}`);
-      setTasks((prev) => prev.filter((p) => p._id !== taskId));
+      setTasks((prev) => prev.filter((task) => task._id !== taskId));
     } catch (err) {
       console.error("Error deleting task:", err);
       setError("Failed to delete task.");
     }
   };
-  const HandleComment = async (taskId: string, e: React.FormEvent) => {
-    
-      {/* Link to Projects Page */}
-      <Link to={`/workspace/${taskId}/projects`} className="text-blue-300 mt-4 block text-sm underline">
-        💬
-      </Link>
+
+  const handleStatusChange = async (taskId: string, newStatus: string) => {
+    try {
+      const response = await api.put(`/tasks/${taskId}`, { status: newStatus });
+      console.log("Updated Task Response:", response.data);
+      
+      setTasks((prev) =>
+        prev.map((task) =>
+          task._id === taskId ? { ...task, status: newStatus } : task
+        )
+      );
+    } catch (err) {
+      console.error("Error updating task status:", err);
+    }
+  };
+  
+
+  // New: Handle Comments Button Click
+  const handleCommentClick = () => {
+    console.log("Comment button clicked!");
+    // You can replace this with a function to open a comment modal
   };
 
   return (
@@ -84,7 +88,7 @@ const TaskList = () => {
       <SideBar />
 
       <div className="flex-1 flex flex-col p-10 bg-white rounded-lg">
-        <h1 className="text-3xl font-bold text-gray-700">Your tasks</h1>
+        <h1 className="text-3xl font-bold text-gray-700">Your Tasks</h1>
         <p className="text-gray-500 mb-4">Keep track of your progress and stay productive.</p>
 
         {loading ? (
@@ -93,45 +97,43 @@ const TaskList = () => {
           <p className="text-center text-red-500">{error}</p>
         ) : (
           <div className="grid grid-cols-3 gap-6">
+            {/* Add New Task Button */}
             <div
               className="bg-[#C7D9E5] flex flex-col justify-center items-center p-4 rounded-lg cursor-pointer hover:bg-gray-300 transition"
-              onClick={() => {
-                setEditMode("add");
-                setSelectedTask(null);
-                setModalOpen(true);
-              }}
+              onClick={() => setModalOpen(true)}
             >
               <FaPlus className="text-4xl text-gray-600" />
               <p className="mt-2 text-gray-600 font-semibold">Add a new task</p>
             </div>
 
-            {tasks.map((task) => (
-              <TaskItem
-                key={task._id}
-                taskId={task._id}
-                name= {task.title}
-                dueDate={task.dueDate}
-                progress={task.status}
-                onCommentClick={(e) => HandleComment(task._id,e)}
-            onProgressChange={() => {
-                  setEditMode("edit");
-                  setSelectedTask(task);
-                  setModalOpen(true);
-                }}
-                onDeleteClick={(e)=> handleDeleteTask(task._id,  e)}
-              />
-            ))}
+            {tasks && tasks.length > 0 ? (
+  tasks.map((task) => (
+    <TaskItem
+      key={task._id}
+      taskId={task._id}
+      name={task.title}
+      dueDate={task.dueDate}
+      progress={task.status}
+      onProgressChange={(newStatus) => handleStatusChange(task._id, newStatus)}
+      onCommentClick={handleCommentClick}
+      onDeleteClick={(e) => handleDeleteTask(task._id, e)}
+    />
+  ))
+) : (
+  <p className="text-center text-gray-500">No tasks found.</p>
+)}
+
           </div>
         )}
       </div>
 
+      {/* Task Form Modal */}
       {modalOpen && (
-        <TaskForm
-          type={editMode}
-          taskData={selectedTask || undefined}
-          onClose={() => setModalOpen(false)}
-          onSubmit={editMode === "add" ? handleAddTask : handleUpdateTask}
-        />
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-[400px]">
+            <TaskForm onClose={() => setModalOpen(false)} onSubmit={handleAddTask} />
+          </div>
+        </div>
       )}
     </div>
   );
