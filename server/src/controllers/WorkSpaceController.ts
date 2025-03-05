@@ -282,7 +282,7 @@ export const inviteMember = async (
   res: Response
 ): Promise<any> => {
   try {
-    const { email, workspaceId } = req.body;
+    const { email, parentId } = req.body;
 
     //Generate a secure token
 
@@ -292,7 +292,7 @@ export const inviteMember = async (
 
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    const workspace = await Workspace.findById(workspaceId);
+    const workspace = await Workspace.findById(parentId);
 
     if (!workspace) {
       return res.status(404).json({ message: "Workspace not found" });
@@ -557,5 +557,56 @@ export const getMember = async (req: Request, res: Response): Promise<any> => {
       message: "Internal server error",
       error: error.message,
     });
+  }
+};
+
+export const getUserInvitations = async (
+  req: CustomRequest,
+  res: Response
+): Promise<void> => {
+  console.log("User Initited invitaion list");
+  const userId = req.id; // This is now an ObjectId
+
+  console.log("User ID from invitation:", userId);
+
+  if (!userId) {
+    res.status(403).json({ message: "Unauthorized" });
+    return;
+  }
+
+  try {
+    // Fetch user by ObjectId
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    console.log("Fetched User:", user); // Debug log
+
+    // Find workspaces where user's email is in invites
+    const workspaces = await Workspace.find({
+      "invites.email": user.Email,
+    });
+
+    console.log("Fetched Workspaces:", workspaces); // Debug log
+
+    if (workspaces.length === 0) {
+      res.status(200).json({ message: "No invitations found" });
+      return;
+    }
+
+    // Extract invitations specific to this user
+    const invitations = workspaces.flatMap((ws) =>
+      ws.invites.filter((invite) => invite.email === user.Email)
+    );
+
+    res.status(200).json({
+      message: "Invitations fetched successfully",
+      invitations,
+    });
+  } catch (error) {
+    console.error("Error fetching invitations:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

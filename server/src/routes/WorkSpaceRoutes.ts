@@ -10,6 +10,7 @@ import {
   makeAdmin,
   removeMember,
   updateWorkspace,
+  getUserInvitations
 } from "../controllers/WorkSpaceController";
 import { verifyToken } from "../middleware/verifytoken";
 
@@ -22,6 +23,7 @@ router.put("/:_id", verifyToken, updateWorkspace);
 router.delete("/:_id", verifyToken, deleteWorkspace);
 router.get("/member/:WorkspaceId", verifyToken, getMember);
 router.post("/join", verifyToken, addMember);
+router.get("/mem/invitelist/",verifyToken, getUserInvitations);
 router.delete("/:_id/members/:DeleteId", verifyToken, removeMember);
 router.post("/invite", verifyToken, inviteMember);
 router.post("/:_id/addAdmin", verifyToken, makeAdmin);

@@ -5,6 +5,7 @@ import { FaPlus } from "react-icons/fa";
 import api from "../../axios/api";
 import { Link } from "react-router-dom";
 import AddItemModal from "../componentSM/AddModalComponent"; // Import modal
+import InvitationList from "../Member/InviteList"; // Import Invitation List component
 import { useNavigate } from "react-router-dom";
 
 const WorkspaceList = () => {
@@ -12,76 +13,75 @@ const WorkspaceList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<String | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false); // For invitations
   const [editMode, setEditMode] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchWorkspaces = async () => {
-      try {
-        const response = await api.get("/workspaces");
-        setWorkspaces(response.data.workspaces);
-      } catch (err) {
-        console.error("Error fetching workspaces:", err);
-        setError("Failed to load workspaces.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchWorkspaces();
   }, []);
 
-interface Workspace {
+  const fetchWorkspaces = async () => {
+    try {
+      const response = await api.get("/workspaces");
+      setWorkspaces(response.data.workspaces);
+    } catch (err) {
+      console.error("Error fetching workspaces:", err);
+      setError("Failed to load workspaces.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  interface Workspace {
     _id: string;
     Name: string;
     description: string;
     projects?: any[];
     createdAt: string;
-}
+  }
 
-interface NewWorkspace {
+  interface NewWorkspace {
     _id: string;
     Name: string;
     description: string;
     projects?: any[];
     createdAt: string;
-}
+  }
 
-// Handle adding a new workspace
-const handleAddWorkspace = (newWorkspace: NewWorkspace) => {
+  // Handle adding a new workspace
+  const handleAddWorkspace = (newWorkspace: NewWorkspace) => {
     setWorkspaces([...workspaces, newWorkspace]); // Update UI instantly
-};
+  };
 
-// Handle updating an existing workspace
-const handleUpdateWorkspace = (updatedWorkspace: NewWorkspace) => {
+  // Handle updating an existing workspace
+  const handleUpdateWorkspace = (updatedWorkspace: NewWorkspace) => {
     setWorkspaces(
-        workspaces.map((ws) => (ws._id === updatedWorkspace._id ? updatedWorkspace : ws))
+      workspaces.map((ws) => (ws._id === updatedWorkspace._id ? updatedWorkspace : ws))
     );
-};
+  };
 
-// Handle opening the modal for editing
-const handleEditWorkspace = (workspace: Workspace) => {
+  // Handle opening the modal for editing
+  const handleEditWorkspace = (workspace: Workspace) => {
     setSelectedWorkspace(workspace);
     setEditMode(true);
     setShowModal(true);
-};
+  };
 
-// Handle deleting a workspace
-const DeleteWS = async (ws_id: string, e: React.FormEvent) => {
+  // Handle deleting a workspace
+  const DeleteWS = async (ws_id: string, e: React.FormEvent) => {
     e.preventDefault();
     try {
       const response = await api.delete(`/workspaces/${ws_id}`);
-  
-      // Ensure we always set an array, even if response.data.workspaces is undefined
-      setWorkspaces(response.data.workspaces || []);
-
+      console.log(response.data);
+      fetchWorkspaces();
     } catch (err) {
       console.error("Error deleting workspace:", err);
       setError("Failed to delete workspaces.");
     }
   };
-  
+
   return (
     <div className="bg-[#304258] flex flex-row min-h-screen overflow-hidden">
       <SideBar />
@@ -91,7 +91,13 @@ const DeleteWS = async (ws_id: string, e: React.FormEvent) => {
         <p className="text-gray-500 mb-4">
           Don't rush the process, good things take time.
         </p>
-
+        {/* Button to show Invitations Modal */}
+        <button
+          className="mt-6 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+          onClick={() => setShowInviteModal(true)}
+        >
+          View Invitations
+        </button>
         {loading ? (
           <p className="text-center text-gray-500">Loading workspaces...</p>
         ) : error ? (
@@ -115,26 +121,25 @@ const DeleteWS = async (ws_id: string, e: React.FormEvent) => {
               </div>
 
               {workspaces.map((ws) => (
-                
                 <WorkspaceCard
                   key={ws._id}
                   workspaceId={ws._id}
-                  name={ws.Name} 
+                  name={ws.Name}
                   description={ws.description}
                   projectsCount={ws.projects?.length || 0}
                   date={new Date(ws.createdAt).toLocaleDateString()}
                   onDelete={(e) => DeleteWS(ws._id, e)}
                   onEdit={() => handleEditWorkspace(ws)}
                 />
-             
               ))}
-
             </div>
           </div>
         )}
+
+        
       </div>
 
-      {/* Show modal when needed */}
+      {/* Show modal for Workspace Add/Edit */}
       {showModal && (
         <AddItemModal
           type="workspace"
@@ -143,6 +148,21 @@ const DeleteWS = async (ws_id: string, e: React.FormEvent) => {
           onAdd={editMode ? handleUpdateWorkspace : handleAddWorkspace}
           existingItem={selectedWorkspace} // Pass existing workspace for editing
         />
+      )}
+
+      {/* Show modal for Invitations */}
+      {showInviteModal && (
+        <div
+          className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50"
+          onClick={() => setShowInviteModal(false)}
+        >
+          <div
+            className="bg-white p-6 rounded-lg shadow-md"
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
+          >
+            <InvitationList />
+          </div>
+        </div>
       )}
     </div>
   );

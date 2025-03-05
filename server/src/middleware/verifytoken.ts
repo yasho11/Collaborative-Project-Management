@@ -17,7 +17,6 @@ interface JWTPayload {
   id?: ObjectId;
   role: string;
 }
-
 export const verifyToken = async (
   req: CustomRequest,
   res: Response,
@@ -28,23 +27,28 @@ export const verifyToken = async (
   if (!token) {
     res.status(401).json({ message: "Token required" });
     return;
-  } else {
-    console.log("Received token: ", token);
-    try {
-      if (JWT_SECRET) {
-        const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
-        console.log("Decoded Payload: ", decoded);
-        req.UserEmail = decoded.email;
-        req.role = decoded.role;
-        req.id = decoded.id;
-        next();
-      } else {
-        res.status(400).json("Secret not found");
-      }
-    } catch (error) {
-      console.error("JWT verification error: ", error);
-      res.status(403).json({ message: "Invalid or expired token" });
-      return;
+  }
+
+  console.log("Received token: ", token);
+
+  try {
+    if (JWT_SECRET) {
+      const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+      console.log("Decoded Payload: ", decoded);
+
+      // Convert the string `id` to ObjectId
+      req.id = new ObjectId(decoded.id); // This ensures `req.id` is an ObjectId
+      req.UserEmail = decoded.email;
+      req.role = decoded.role;
+
+      console.log("Middleware set req.id to:", req.id); // Debug log
+      next();
+    } else {
+      res.status(400).json("Secret not found");
     }
+  } catch (error) {
+    console.error("JWT verification error: ", error);
+    res.status(403).json({ message: "Invalid or expired token" });
+    return;
   }
 };
