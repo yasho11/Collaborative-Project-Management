@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
+import { ObjectId } from "mongodb";
 import User from "../models/User";
-
+import Workspace from "../models/Workspace";
 //?----------------------------------------------------------------------------------------------------------------------------------
 /*
 !@desc: interface defining UserEmail & Role
@@ -10,6 +11,7 @@ import User from "../models/User";
 interface CustomRequest extends Request {
   UserEmail?: string;
   role?: string;
+  id?: ObjectId;
 }
 //?----------------------------------------------------------------------------------------------------------------------------------
 

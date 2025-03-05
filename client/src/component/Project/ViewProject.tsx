@@ -6,6 +6,7 @@ import api from "../../axios/api";
 import AddItemModal from "../componentSM/AddModalComponent";
 import { useNavigate, useParams } from "react-router-dom";
 import MemberListPopup from "../Member/ViewMember";
+import AddMember from "../Member/InviteMember"; // Import AddMember component
 
 interface Project {
   _id: string;
@@ -31,57 +32,31 @@ const ProjectList = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [isMemberPopupOpen, setIsMemberPopupOpen] = useState(false);
+  const [showInviteMember, setShowInviteMember] = useState(false); // State for Invite Member popup
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      if (!workspaceId) {
-        setError("Workspace ID is missing.");
-        return;
-      }
-
-      try {
-        console.log("Fetching projects for workspace ID:", workspaceId);
-        const response = await api.get(`projects/ws/${workspaceId}`);
-        console.log("API Response:", response.data);
-
-        setProjects(Array.isArray(response.data.projects) ? response.data.projects : []);
-      } catch (err) {
-        console.error("Error fetching projects:", err);
-        setError("Failed to load projects.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProjects();
   }, [workspaceId]);
+  
+  const fetchProjects = async () => {
+    if (!workspaceId) {
+      setError("Workspace ID is missing.");
+      return;
+    }
 
-  const handleAddProject = (newProject: Project) => {
-    setProjects((prev) => [...prev, newProject]);
-  };
-
-  const handleUpdateProject = (updatedProject: Project) => {
-    setProjects((prev) =>
-      prev.map((p) => (p._id === updatedProject._id ? updatedProject : p))
-    );
-  };
-
-  const handleEditProject = (project: Project) => {
-    setSelectedProject(project);
-    setEditMode(true);
-    setShowModal(true);
-  };
-
-  const deleteProject = async (projectId: string, e: React.FormEvent) => {
-    e.preventDefault();
     try {
-      await api.delete(`/projects/${projectId}`);
-      setProjects((prev) => prev.filter((p) => p._id !== projectId));
+      console.log("Fetching projects for workspace ID:", workspaceId);
+      const response = await api.get(`projects/ws/${workspaceId}`);
+      console.log("API Response:", response.data);
+
+      setProjects(Array.isArray(response.data.projects) ? response.data.projects : []);
     } catch (err) {
-      console.error("Error deleting project:", err);
-      setError("Failed to delete project.");
+      console.error("Error fetching projects:", err);
+      setError("Failed to load projects.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -94,26 +69,26 @@ const ProjectList = () => {
     try {
       const response = await api.get(`/workspaces/member/${workspaceId}`);
       setMembers(response.data.members);
-      console.log(response.data.members);
       setIsMemberPopupOpen(true);
     } catch (err) {
       setError("Failed to load workspace members.");
     }
   };
 
-  const handleDeleteMember = async (memberId: string) => {
+  const handleDeleteProject = async (ProjectId: string) => {
     if (!workspaceId) {
       setError("Workspace ID is missing.");
       return;
     }
 
     try {
-      await api.delete(`/workspaces/member/${workspaceId}/${memberId}`);
-      setMembers((prev) => prev.filter((member) => member._id !== memberId));
-      console.log(`Deleted member with ID: ${memberId}`);
+      await api.delete(`/projects/${ProjectId}`);
+
+      fetchProjects();
+
     } catch (err) {
-      console.error("Failed to delete member:", err);
-      setError("Failed to delete member.");
+      console.error("Failed to delete project:", err);
+      setError("Failed to delete project.");
     }
   };
 
@@ -127,13 +102,15 @@ const ProjectList = () => {
           Keep track of your progress and stay productive.
         </p>
 
-        {/* Button to Show Project Members */}
-        <button
-          onClick={handleFetchMembers}
-          className="mb-4 text-black underline"
-        >
-          View Workspace Members
-        </button>
+        {/* Buttons for Viewing and Adding Members */}
+        <div className="flex gap-4 mb-4">
+          <button onClick={handleFetchMembers} className="text-black underline">
+            View Workspace Members
+          </button>
+          <button onClick={() => setShowInviteMember(true)} className="text-black underline">
+            Invite Member
+          </button>
+        </div>
 
         {loading ? (
           <p className="text-center text-gray-500">Loading projects...</p>
@@ -160,22 +137,40 @@ const ProjectList = () => {
                 name={project.Name}
                 dueDate={new Date(project.dueDate).toLocaleDateString()}
                 progress={project.progress?.completionPercentage || 0}
-                onEdit={() => handleEditProject(project)}
-                onDelete={(e) => deleteProject(project._id, e)}
+                onEdit={() => {
+                  setEditMode(true);
+                  setSelectedProject(project);
+                  setShowModal(true);
+                }}
+                onDelete={async (e: React.FormEvent) => {
+                  e.preventDefault();
+                  await handleDeleteProject(project._id);
+                }}
               />
             ))}
           </div>
         )}
       </div>
 
+      {/* Add Project Modal */}
       {showModal && (
         <AddItemModal
-          type="project"
-          parentId={workspaceId}
-          onClose={() => setShowModal(false)}
-          onAdd={editMode ? handleUpdateProject : handleAddProject}
-          existingItem={selectedProject}
-        />
+        type="project"
+        parentId={workspaceId}
+        onClose={() => setShowModal(false)}
+        onAdd={(newProject) => {
+          if (editMode) {
+            // Update the project list instead of adding a new one
+            setProjects((prevProjects) =>
+              prevProjects.map((proj) => (proj._id === newProject._id ? newProject : proj))
+            );
+          } else {
+            setProjects([...projects, newProject]);
+          }
+        }}
+        existingItem={selectedProject} // <-- Make sure this is passed when editing
+      />
+      
       )}
 
       {/* Member List Popup */}
@@ -183,8 +178,31 @@ const ProjectList = () => {
         <MemberListPopup
           members={members}
           onClose={() => setIsMemberPopupOpen(false)}
-          onDeleteMember={handleDeleteMember}
+          onDeleteMember={async (memberId: string) => {
+            try {
+              await api.delete(`/workspaces/member/${workspaceId}/${memberId}`);
+              setMembers(members.filter(member => member._id !== memberId));
+            } catch (err) {
+              setError("Failed to delete member.");
+            }
+          }}
         />
+      )}
+
+      {/* Invite Member Popup */}
+      {showInviteMember && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-bold mb-4">Invite Member</h2>
+            <AddMember parentId={workspaceId || ""} type="workspaces" />
+            <button
+              className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
+              onClick={() => setShowInviteMember(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
